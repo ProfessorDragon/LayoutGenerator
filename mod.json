@@ -7,16 +7,19 @@
 		"ios": "2.2081"
 	},
 	"id": "profdragon.layoutgenerator",
-	"name": "LayoutGenerator",
+	"name": "Layout Generator",
 	"version": "v1.0.0",
 	"developer": "ProfDragon",
-	"description": "",
+	"description": "Procedurally generated Geometry Dash layouts",
 	"dependencies": {
 		"geode.node-ids": ">=v1.23.3"
 	},
-	"resources": {
-		"files": [
-			"resources/data/hitboxes.json"
-		]
+	"tags": [
+		"editor",
+		"utility",
+		"offline"
+	],
+	"links": {
+		"source": "https://github.com/ProfessorDragon/LayoutGenerator"
 	}
 }

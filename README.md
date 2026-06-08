@@ -1,23 +1,23 @@
 # LayoutGenerator
-This is where she makes a mod.
 
-<img src="logo.png" width="150" alt="the mod's logo" />
+Procedurally generated Geometry Dash layouts 
 
-*Update logo.png to change your mod's icon (please)*
+<img src="logo.png" width="150" alt="logo" />
 
-## Getting started
-We recommend heading over to [the getting started section on our docs](https://docs.geode-sdk.org/getting-started/) for useful info on what to do next.
 
 ## Build instructions
-For more info, see [our docs](https://docs.geode-sdk.org/getting-started/create-mod#build)
+
+For more info, see the [Geode docs](https://docs.geode-sdk.org/getting-started/create-mod#build)
 ```sh
 # Assuming you have the Geode CLI set up already
 geode build
 ```
 
-# Resources
-* [Geode SDK Documentation](https://docs.geode-sdk.org/)
-* [Geode SDK Source Code](https://github.com/geode-sdk/geode/)
-* [Geode CLI](https://github.com/geode-sdk/cli)
-* [Bindings](https://github.com/geode-sdk/bindings/)
-* [Dev Tools](https://github.com/geode-sdk/DevTools)
+
+## Creating a layout
+
+1. Create a new level and open the editor.
+2. If the mod is installed correctly, there will be new buttons in the top left corner, next to the music playback button.
+3. Click on the BPM button and enter the BPM of the song you're using.
+4. Click the Everyplay/snapshot button to start generating.
+5. It will go for as long as you want. Click the stop button to stop generating.
