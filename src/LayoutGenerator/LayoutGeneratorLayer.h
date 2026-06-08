@@ -72,6 +72,10 @@ protected:
 
 	void placeFish(const PoolObject *fish, bool dedup = false, bool useLastY = false);
 
+	void placeJumpIndicator(CCPoint pos);
+
+	void placeLabel(std::string text, CCPoint pos);
+
 	void placeSpikeBoundary(
 		CCPoint spikeBottomPos,
 		CCPoint spikeTopPos,
@@ -82,8 +86,6 @@ protected:
 		float dedupDistance);
 
 	void placeSpikeInBounds(CCPoint pos, bool hasBounds, bool flipY);
-
-	void placeLabel(std::string text, CCPoint pos);
 
 	bool isClicking(PlayerObject *player);
 

@@ -132,6 +132,9 @@ void LayoutGeneratorLayer::update(float dt)
         }
         m_hasTappedThisGamemode = false;
         m_lastGamemodePortalPos = player->m_lastPortalPos;
+
+        if (gamemode & PoolState::TAP_FLYING && isClicking(player))
+            placeJumpIndicator(playerPos);
     }
 
     // place object on beat (spb = seconds per beat)
@@ -335,10 +338,7 @@ void LayoutGeneratorLayer::update(float dt)
                     // make jump indicators in ufo and swing
                     else
                     {
-                        auto jumpIndicatorObj = editor->createObject(ObjectId::AIRBORNE_JUMP_INDICATOR, playerPos, true);
-                        jumpIndicatorObj->updateCustomScaleX(0.5);
-                        jumpIndicatorObj->updateCustomScaleY(0.5);
-                        jumpIndicatorObj->m_editorLayer = 1;
+                        placeJumpIndicator(playerPos);
                     }
                     m_shouldTap = PoolTap::NO;
                 }
@@ -636,6 +636,24 @@ void LayoutGeneratorLayer::placeFish(const PoolObject *fish, bool dedup, bool us
     m_lastPlacedFishPos = pos;
 }
 
+void LayoutGeneratorLayer::placeJumpIndicator(CCPoint pos)
+{
+    auto jumpIndicatorObj = LevelEditorLayer::get()->createObject(ObjectId::AIRBORNE_JUMP_INDICATOR, pos, true);
+    jumpIndicatorObj->updateCustomScaleX(0.5);
+    jumpIndicatorObj->updateCustomScaleY(0.5);
+    jumpIndicatorObj->m_editorLayer = 1;
+}
+
+void LayoutGeneratorLayer::placeLabel(std::string text, CCPoint pos)
+{
+    auto textObj = static_cast<TextGameObject *>(LevelEditorLayer::get()->createObject(ObjectId::TEXT, pos, true));
+    textObj->updateCustomScaleX(0.25);
+    textObj->updateCustomScaleY(0.25);
+    textObj->m_editorLayer = 1;
+    textObj->m_zLayer = ZLayer::T2;
+    textObj->updateTextObject(text, false);
+}
+
 void LayoutGeneratorLayer::placeSpikeBoundary(
     CCPoint spikeBottomPos,
     CCPoint spikeTopPos,
@@ -730,16 +748,6 @@ void LayoutGeneratorLayer::placeSpikeInBounds(CCPoint pos, bool hasBounds, bool 
     {
         LevelEditorLayer::get()->createObject(ObjectId::SPIKE, pos, true)->setFlipY(flipY);
     }
-}
-
-void LayoutGeneratorLayer::placeLabel(std::string text, CCPoint pos)
-{
-    auto textObj = static_cast<TextGameObject *>(LevelEditorLayer::get()->createObject(ObjectId::TEXT, pos, true));
-    textObj->updateCustomScaleX(0.25);
-    textObj->updateCustomScaleY(0.25);
-    textObj->m_editorLayer = 1;
-    textObj->m_zLayer = ZLayer::T2;
-    textObj->updateTextObject(text, false);
 }
 
 bool LayoutGeneratorLayer::isClicking(PlayerObject *player)

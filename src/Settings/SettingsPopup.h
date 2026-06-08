@@ -11,8 +11,12 @@ public:
     static SettingsPopup *create(Settings *settings);
 
 protected:
-    TextInput *m_bpmInput;
+    Settings *m_settings;
 
 protected:
     bool init(Settings *settings);
+
+    CCMenu *createCheckbox(char const *label, bool initialValue, cocos2d::CCObject *target, cocos2d::SEL_MenuHandler callback);
+
+    void onCheckboxUsePlayerClicks(CCObject *sender);
 };

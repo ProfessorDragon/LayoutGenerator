@@ -23,4 +23,6 @@ public:
     bool getUsePlayerClicks() { return usePlayerClicks; }
 
     bool getUseRandomClicks() { return !usePlayerClicks; }
+
+    void setUsePlayerClicks(bool usePlayerClicks) { this->usePlayerClicks = usePlayerClicks; }
 };
