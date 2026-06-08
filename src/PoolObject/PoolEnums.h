@@ -93,6 +93,11 @@ enum PoolAlign
     BL = 1 << 6,
     BC = 1 << 7,
     BR = 1 << 8,
+
+    T = TL | TC | TR,
+    B = BL | BC | BR,
+    L = TL | CL | BL,
+    R = TR | CR | BR,
 };
 
 enum PoolTap

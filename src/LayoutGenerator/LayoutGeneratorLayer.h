@@ -27,8 +27,6 @@ public:
 	static LayoutGeneratorLayer *create();
 
 protected:
-	float m_bpm = 128.f;
-
 	bool m_isBuilding = false;
 
 	float m_boundsCeil = 0.f;
@@ -86,6 +84,8 @@ protected:
 	void placeSpikeInBounds(CCPoint pos, bool hasBounds, bool flipY);
 
 	void placeLabel(std::string text, CCPoint pos);
+
+	bool isClicking(PlayerObject *player);
 
 	bool isOutOfBounds(float y, float height, bool hasUpperBound);
 

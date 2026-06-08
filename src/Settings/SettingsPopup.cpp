@@ -1,9 +1,10 @@
 #include "SettingsPopup.h"
+#include "Settings.h"
 
-SettingsPopup *SettingsPopup::create()
+SettingsPopup *SettingsPopup::create(Settings *settings)
 {
     auto ret = new SettingsPopup();
-    if (ret->init())
+    if (ret->init(settings))
     {
         ret->autorelease();
         return ret;
@@ -13,7 +14,7 @@ SettingsPopup *SettingsPopup::create()
     return nullptr;
 }
 
-bool SettingsPopup::init()
+bool SettingsPopup::init(Settings *settings)
 {
     if (!Popup::init(340.f, 200.f))
         return false;
@@ -22,18 +23,19 @@ bool SettingsPopup::init()
 
     m_bpmInput = TextInput::create(50.f, ZStringView());
     m_bpmInput->setCallback(
-        [this](const std::string &value)
+        [settings](const std::string &value)
         {
-            if (m_bpmCallback)
-            {
-                auto result = utils::numFromString<float>(value);
-                if (result.isOk())
-                    m_bpmCallback(result.unwrap());
-            }
+            auto result = utils::numFromString<float>(value);
+            if (result.isOk())
+                settings->setBpm(result.unwrap());
         });
+    std::string s = std::to_string(settings->getBpm());
+    while (s.ends_with("0") || s.ends_with("."))
+        s = s.substr(0, s.size() - 1);
+    m_bpmInput->setString(s);
     m_bpmInput->setFilter("1234567890.");
     m_bpmInput->setLabel("BPM");
-    m_bpmInput->setMaxCharCount(6);
+    m_bpmInput->setMaxCharCount(8);
     m_bpmInput->focus();
     m_mainLayer->addChildAtPosition(m_bpmInput, Anchor::Center, CCPoint{0.f, 25.f});
 
@@ -51,18 +53,4 @@ bool SettingsPopup::init()
     m_mainLayer->addChildAtPosition(label, Anchor::Center, CCPoint{0.f, -50.f});
 
     return true;
-}
-
-void SettingsPopup::setBpm(float bpm)
-{
-    std::string s = std::to_string(bpm);
-    while (s.ends_with("0") || s.ends_with("."))
-        s = s.substr(0, s.size() - 1);
-    m_bpmInput->setString(s);
-    m_bpmInput->focus();
-}
-
-void SettingsPopup::setBpmCallback(std::function<void(float)> callback)
-{
-    m_bpmCallback = std::move(callback);
 }

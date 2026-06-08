@@ -1,7 +1,8 @@
 #include "LayoutGeneratorLayer.h"
 #include "../GameObjectPool/GameObjectPool.h"
 #include "../PoolObject/PoolObject.h"
-#include "../SettingsPopup/SettingsPopup.h"
+#include "../Settings/Settings.h"
+#include "../Settings/SettingsPopup.h"
 
 #define MACRO_PLAYER_DATA                                                                             \
     LevelEditorLayer *editor = LevelEditorLayer::get();                                               \
@@ -13,13 +14,16 @@
     PoolState gamemode = getPlayerGamemode(player);                                                   \
     int state = getPlayerState(player);
 
-const int GLOBAL_EXCLUDE_TAGS = 0;    // e.g. PoolTag::GAMEMODE
-const float GLOBAL_SONG_OFFSET = 0.f; // (previously 0.24) offset for better sync - experimental
-
 std::mt19937 &getRng()
 {
     static std::mt19937 rng(std::random_device{}());
     return rng;
+}
+
+Settings *getSettings()
+{
+    static Settings settings;
+    return &settings;
 }
 
 LayoutGeneratorLayer *LayoutGeneratorLayer::create()
@@ -76,7 +80,7 @@ void LayoutGeneratorLayer::reset()
     m_isBuilding = true;
     m_boundsCeil = 1300.f;
     m_boundsFloor = 90.f;
-    m_elapsedTime = LevelEditorLayer::get()->m_levelSettings->m_songOffset + GLOBAL_SONG_OFFSET;
+    m_elapsedTime = LevelEditorLayer::get()->m_levelSettings->m_songOffset + getSettings()->getExtraSongOffset();
     m_hasTappedThisGamemode = false;
     m_lastGamemodePortalPos = CCPoint{0.f, m_boundsFloor};
     m_lastPlacedFish = nullptr;
@@ -131,7 +135,7 @@ void LayoutGeneratorLayer::update(float dt)
     }
 
     // place object on beat (spb = seconds per beat)
-    float spb = 60.f / m_bpm;
+    float spb = 60.f / getSettings()->getBpm();
     bool onBeat = (int)(m_elapsedTime / spb) != (int)((m_elapsedTime + dt) / spb);
     bool onHalfBeat = (int)(m_elapsedTime / spb * 2.f) != (int)((m_elapsedTime + dt) / spb * 2.f);
 
@@ -231,7 +235,7 @@ void LayoutGeneratorLayer::update(float dt)
             }
 
             // make sure the player lets go of jump for at least 1 frame before tapping a ring or robot jump
-            if (fish->tap & PoolTap::TAP_OR_HOLD && player->m_holdingButtons[(int)PlayerButton::Jump])
+            if (getSettings()->getUseRandomClicks() && fish->tap & PoolTap::TAP_OR_HOLD && isClicking(player))
             {
                 if (fish->tags & PoolTag::RING || (state & (PoolState::GAMEMODE_BALL | PoolState::GAMEMODE_ROBOT) && fish->tags & PoolTag::BLOCK) || player->m_isDashing)
                 {
@@ -241,7 +245,9 @@ void LayoutGeneratorLayer::update(float dt)
             }
         }
         else
+        {
             log::warn("fishing failed! last id: {}", m_fishId);
+        }
     }
 
     // spikes v2
@@ -288,59 +294,66 @@ void LayoutGeneratorLayer::update(float dt)
             5.f);
 
     // jumping
-    if (m_shouldTapTimer > 0)
-        m_shouldTapTimer--;
-    else if (m_shouldTap == PoolTap::RANDOM)
+    if (getSettings()->getUseRandomClicks())
     {
-        // 50% chance to toggle the jump button, every couple of frames
-        if (std::uniform_int_distribution<int>(1, 2)(getRng()) == 1)
+        if (m_shouldTapTimer > 0)
         {
-            m_shouldTapTimer = std::uniform_int_distribution<int>(2, 4)(getRng());
-            if (player->m_holdingButtons[(int)PlayerButton::Jump])
-                player->releaseButton(PlayerButton::Jump);
-            else
-                player->pushButton(PlayerButton::Jump);
+            m_shouldTapTimer--;
         }
-    }
-    else if (
-        ((bool)(m_shouldTap & PoolTap::TAP_OR_HOLD)) != player->m_holdingButtons[(int)PlayerButton::Jump])
-    {
-        if (m_shouldTap & PoolTap::TAP_OR_HOLD)
+        else if (m_shouldTap == PoolTap::RANDOM)
         {
-            player->pushButton(PlayerButton::Jump);
-            m_hasTappedThisGamemode = true;
-
-            // release the button if required
-            if (m_shouldTap & (PoolTap::TAP | PoolTap::HOLD_RANDOM))
+            // 50% chance to toggle the jump button, every couple of frames
+            if (std::uniform_int_distribution<int>(1, 2)(getRng()) == 1)
             {
-                // delay a couple frames to simulate realistic clicking
-                // however, ufo can 'hold to fly' when using player->pushButton, so don't do it then
-                if (!(state & PoolState::TAP_FLYING))
-                {
-                    // hold for a random duration
-                    if (m_shouldTap == PoolTap::HOLD_RANDOM)
-                        m_shouldTapTimer = std::uniform_int_distribution<int>(2, 20)(getRng());
-                    else
-                        m_shouldTapTimer = 3;
-                }
+                m_shouldTapTimer = std::uniform_int_distribution<int>(2, 4)(getRng());
+                if (isClicking(player))
+                    player->releaseButton(PlayerButton::Jump);
                 else
-                {
-                    auto jumpIndicatorObj = editor->createObject(ObjectId::AIRBORNE_JUMP_INDICATOR, playerPos, true);
-                    jumpIndicatorObj->updateCustomScaleX(0.5);
-                    jumpIndicatorObj->updateCustomScaleY(0.5);
-                    jumpIndicatorObj->m_editorLayer = 1;
-                }
-                m_shouldTap = PoolTap::NO;
+                    player->pushButton(PlayerButton::Jump);
             }
         }
-        else
-            player->releaseButton(PlayerButton::Jump);
+        else if ((bool)(m_shouldTap & PoolTap::TAP_OR_HOLD) != isClicking(player))
+        {
+            if (m_shouldTap & PoolTap::TAP_OR_HOLD)
+            {
+                player->pushButton(PlayerButton::Jump);
+                m_hasTappedThisGamemode = true;
+
+                // release the button if required
+                if (m_shouldTap & (PoolTap::TAP | PoolTap::HOLD_RANDOM))
+                {
+                    // delay a couple frames to simulate realistic clicking
+                    // however, ufo can 'hold to fly' when using player->pushButton, so don't do it then
+                    if (!(state & PoolState::TAP_FLYING))
+                    {
+                        // hold for a random duration
+                        if (m_shouldTap == PoolTap::HOLD_RANDOM)
+                            m_shouldTapTimer = std::uniform_int_distribution<int>(2, 20)(getRng());
+                        else
+                            m_shouldTapTimer = 3;
+                    }
+                    // make jump indicators in ufo and swing
+                    else
+                    {
+                        auto jumpIndicatorObj = editor->createObject(ObjectId::AIRBORNE_JUMP_INDICATOR, playerPos, true);
+                        jumpIndicatorObj->updateCustomScaleX(0.5);
+                        jumpIndicatorObj->updateCustomScaleY(0.5);
+                        jumpIndicatorObj->m_editorLayer = 1;
+                    }
+                    m_shouldTap = PoolTap::NO;
+                }
+            }
+            else
+            {
+                player->releaseButton(PlayerButton::Jump);
+            }
+        }
     }
 
     // mark trail
-    auto trailObj = editor->createObject(player->m_holdingButtons[(int)PlayerButton::Jump] ? 1765 : 1764, playerPos, true);
+    auto trailObj = editor->createObject(isClicking(player) ? 1765 : 1764, playerPos, true);
     trailObj->updateCustomScaleX(0.5);
-    trailObj->updateCustomScaleY(0.5);
+    trailObj->updateCustomScaleY(ok ? 2 : 0.5);
     trailObj->m_editorLayer = 1;
 
     m_elapsedTime += dt;
@@ -365,7 +378,7 @@ const PoolObject *LayoutGeneratorLayer::fishLegally(bool onBeat, int requireTap)
         [&](const PoolObject *fish)
         {
             // tag blacklist
-            if (fish->tags & GLOBAL_EXCLUDE_TAGS)
+            if (fish->tags & getSettings()->getExcludeTags())
                 return 0.f;
 
             // only change gamemode, speed, and size on beat
@@ -471,13 +484,13 @@ void LayoutGeneratorLayer::placeFish(const PoolObject *fish, bool dedup, bool us
     auto pos = CCPoint{
         playerPos.x + playerVel.x,
         playerPos.y + (state & PoolState::GROUNDED ? 0.f : playerVel.y)};
-    if (fish->alignPlayer & (PoolAlign::TL | PoolAlign::TC | PoolAlign::TR))
+    if (fish->alignPlayer & PoolAlign::T)
         pos.y += playerRect.size.height / 2.f * sign;
-    else if (fish->alignPlayer & (PoolAlign::BL | PoolAlign::BC | PoolAlign::BR))
+    else if (fish->alignPlayer & PoolAlign::B)
         pos.y -= playerRect.size.height / 2.f * sign;
-    if (fish->alignPlayer & (PoolAlign::TL | PoolAlign::CL | PoolAlign::BL))
+    if (fish->alignPlayer & PoolAlign::L)
         pos.x -= playerRect.size.width / 2.f;
-    else if (fish->alignPlayer & (PoolAlign::TR | PoolAlign::CR | PoolAlign::BR))
+    else if (fish->alignPlayer & PoolAlign::R)
         pos.x += playerRect.size.width / 2.f;
 
     GameObject *primaryObj = nullptr;
@@ -495,13 +508,13 @@ void LayoutGeneratorLayer::placeFish(const PoolObject *fish, bool dedup, bool us
 
         auto primaryObjRect = getObjectRect(tempObj);
         editor->removeObject(tempObj, true);
-        if (fish->alignObject & (PoolAlign::TL | PoolAlign::TC | PoolAlign::TR))
+        if (fish->alignObject & PoolAlign::T)
             pos.y -= primaryObjRect.getMaxY() * sign;
-        else if (fish->alignObject & (PoolAlign::BL | PoolAlign::BC | PoolAlign::BR))
+        else if (fish->alignObject & PoolAlign::B)
             pos.y -= primaryObjRect.getMinY() * sign;
-        if (fish->alignObject & (PoolAlign::TL | PoolAlign::CL | PoolAlign::BL))
+        if (fish->alignObject & PoolAlign::L)
             pos.x -= primaryObjRect.getMinX();
-        else if (fish->alignObject & (PoolAlign::TR | PoolAlign::CR | PoolAlign::BR))
+        else if (fish->alignObject & PoolAlign::R)
             pos.x -= primaryObjRect.getMaxX();
         if (useLastY)
             pos.y = m_lastPlacedFishPos.y;
@@ -729,6 +742,11 @@ void LayoutGeneratorLayer::placeLabel(std::string text, CCPoint pos)
     textObj->updateTextObject(text, false);
 }
 
+bool LayoutGeneratorLayer::isClicking(PlayerObject *player)
+{
+    return player->m_holdingButtons[(int)PlayerButton::Jump];
+}
+
 bool LayoutGeneratorLayer::isOutOfBounds(float y, float height, bool hasUpperBound)
 {
     return y + height / 2.f < m_boundsFloor || (y - height / 2.f > m_boundsCeil && hasUpperBound);
@@ -921,13 +939,7 @@ void LayoutGeneratorLayer::onSettingsButton(CCObject *)
     //     }
     // }
 
-    auto popup = SettingsPopup::create();
-    popup->setBpm(m_bpm);
-    popup->setBpmCallback(
-        [this](float bpm)
-        {
-            m_bpm = bpm;
-        });
+    auto popup = SettingsPopup::create(getSettings());
     popup->show();
 }
 
