@@ -27,7 +27,8 @@ bool SettingsPopup::init(Settings *settings)
         "Info",
         "<cs>BPM</c>: Enter the song's BPM to make gameplay sync.\n"
         "<cs>Use player clicks</c>: If enabled, the gameplay will form around your clicks. "
-        "If not, clicks will be inserted at random.",
+        "If not, clicks will be inserted at random.\n"
+        "<cs>Don't change gamemode</c>: Prevents gamemode portals from spawning.",
         .5f);
     info->setID("info"_spr);
     // WHYYYY DOES THIS NEED TO BE ADDED ON A SEPARATE LAYER????
@@ -50,7 +51,7 @@ bool SettingsPopup::init(Settings *settings)
     bpm->setMaxCharCount(8);
     bpm->focus();
     bpm->setID("bpm-input"_spr);
-    m_mainLayer->addChildAtPosition(bpm, Anchor::Center, CCPoint{-100.f, 25.f});
+    m_mainLayer->addChildAtPosition(bpm, Anchor::Center, CCPoint{-110.f, 25.f});
 
     auto usePlayerClicks = createCheckbox(
         "Use player clicks",
@@ -58,12 +59,20 @@ bool SettingsPopup::init(Settings *settings)
         this,
         menu_selector(SettingsPopup::onCheckboxUsePlayerClicks));
     usePlayerClicks->setID("use-player-clicks"_spr);
-    m_mainLayer->addChildAtPosition(usePlayerClicks, Anchor::Center, CCPoint{50.f, 25.f});
+    m_mainLayer->addChildAtPosition(usePlayerClicks, Anchor::Center, CCPoint{185.f, 35.f});
+
+    auto dontChangeGamemode = createCheckbox(
+        "Dont change gamemode",
+        settings->getExcludeTags() & PoolTag::GAMEMODE,
+        this,
+        menu_selector(SettingsPopup::onCheckboxDontChangeGamemode));
+    dontChangeGamemode->setID("dont-change-gamemode"_spr);
+    m_mainLayer->addChildAtPosition(dontChangeGamemode, Anchor::Center, CCPoint{185.f, 15.f});
 
     auto examples = CCLabelBMFont::create(
         "Examples:\n"
         "Creo - In Circles (786863) - 92bpm\n"
-        "Creo - Lightmare (914838) - 108bpm\n"
+        "Creo - Lightmare (914838) - 107bpm\n"
         "ConnorGrail - What Is It You Seek? (1286522) - 108bpm\n"
         "Creo - Ballistic Funk (905109) - 113bpm\n"
         "Acid-Notation - The Yandere's Puppet Show (722366) - 128bpm\n"
@@ -80,20 +89,31 @@ bool SettingsPopup::init(Settings *settings)
 CCMenu *SettingsPopup::createCheckbox(char const *label, bool initialValue, cocos2d::CCObject *target, cocos2d::SEL_MenuHandler callback)
 {
     auto row = CCMenu::create();
-    row->setLayout(RowLayout::create()->setAutoScale(false));
+    row->setLayout(
+        RowLayout::create()
+            ->setAxisAlignment(AxisAlignment::Start)
+            ->setAutoScale(false));
 
     auto checkbox = CCMenuItemToggler::createWithStandardSprites(target, callback, 1.f);
     checkbox->setScale(0.5f);
     checkbox->toggle(initialValue);
 
     auto labelNode = CCLabelBMFont::create(label, "bigFont.fnt");
-    labelNode->setScale(0.5f);
+    labelNode->setScale(0.45f);
 
     row->addChild(checkbox);
     row->addChild(labelNode);
     row->updateLayout();
 
     return row;
+}
+
+void SettingsPopup::onCheckboxDontChangeGamemode(CCObject *sender)
+{
+    if (auto checkbox = static_cast<CCMenuItemToggler *>(sender))
+    {
+        m_settings->setExcludeTags(!checkbox->isToggled() ? PoolTag::GAMEMODE : 0);
+    }
 }
 
 void SettingsPopup::onCheckboxUsePlayerClicks(CCObject *sender)

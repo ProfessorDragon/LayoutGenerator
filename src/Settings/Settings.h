@@ -6,9 +6,9 @@ class Settings
 protected:
     float bpm = 128.f;
 
-    const int excludeTags = 0; // e.g. PoolTag::GAMEMODE
+    int excludeTags = 0; // e.g. PoolTag::GAMEMODE
 
-    const float extraSongOffset = 0.f; // (previously 0.24) offset for better sync - experimental
+    const float extraSongOffset = 0.133f; // offset for better sync - experimental
 
     bool usePlayerClicks = false;
 
@@ -18,6 +18,8 @@ public:
     void setBpm(float bpm) { this->bpm = bpm; }
 
     int getExcludeTags() { return excludeTags; }
+
+    void setExcludeTags(int excludeTags) { this->excludeTags = excludeTags; }
 
     float getExtraSongOffset() { return extraSongOffset; }
 

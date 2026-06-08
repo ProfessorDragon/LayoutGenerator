@@ -18,5 +18,7 @@ protected:
 
     CCMenu *createCheckbox(char const *label, bool initialValue, cocos2d::CCObject *target, cocos2d::SEL_MenuHandler callback);
 
+    void onCheckboxDontChangeGamemode(CCObject *sender);
+
     void onCheckboxUsePlayerClicks(CCObject *sender);
 };

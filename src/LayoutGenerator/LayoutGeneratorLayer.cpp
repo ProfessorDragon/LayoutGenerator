@@ -109,7 +109,7 @@ void LayoutGeneratorLayer::update(float dt)
     bool useRandomClicks = getSettings()->getUseRandomClicks();
 
     // paused
-    if (!m_playerTrail.empty() && m_playerTrail[m_playerTrail.size() - 1].pos == playerPos)
+    if (!m_playerTrail.empty() && m_playerTrail.back().pos == playerPos)
         return;
     m_playerTrail.push_back(PlayerTrailData{
         playerPos, playerVel, player->getObjectRect().size.width, state, m_boundsCeil, m_boundsFloor});
@@ -196,14 +196,12 @@ void LayoutGeneratorLayer::update(float dt)
     else if (std::uniform_int_distribution<int>(1, 16)(getRng()) > 1 && onBeat)
     {
         ok = true;
+        if (useRandomClicks && std::uniform_int_distribution<int>(1, 2)(getRng()) == 1)
+            requireTap |= PoolTap::TAP_OR_HOLD;
     }
     // half beat
     else if (std::uniform_int_distribution<int>(1, 2)(getRng()) == 1 && onHalfBeat)
-    {
         ok = true;
-        if (useRandomClicks)
-            requireTap |= PoolTap::TAP_OR_HOLD;
-    }
     // flying fallback
     else if (gamemode & PoolState::FLYING && onHalfBeat)
         ok = true;
@@ -342,8 +340,8 @@ void LayoutGeneratorLayer::update(float dt)
              // it does not change in mini size.
              ? 6.f
              : playerRect.size.width) +
-            // add 5, which is a bit less than one spike width.
-            5.f);
+            // add one spike width minus xv
+            6.f - playerVel.x);
 
     // jumping
     if (useRandomClicks)
