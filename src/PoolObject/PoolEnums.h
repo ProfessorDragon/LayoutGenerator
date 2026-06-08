@@ -21,8 +21,9 @@ enum PoolTag
     // block type
     BLOCK = 1 << 0,
     PAD = 1 << 1,
-    RING = 1 << 2,
+    RING_BUFFERED = 1 << 2,
     RING_LATE = 1 << 3,
+    RING = RING_BUFFERED | RING_LATE,
     PORTAL = 1 << 4,
 
     // what the block does
@@ -34,6 +35,7 @@ enum PoolTag
     SPEED = 1 << 10,    // changes player speed
     GAMEMODE = 1 << 11, // changes gamemode
     SPIDER = 1 << 12,   // teleports player to ground
+    BUFFERED = 1 << 13, // can only be interacted with when a tap is buffered
 };
 
 enum PoolState
@@ -79,7 +81,7 @@ enum PoolState
     NOT_SPIDER = GAMEMODE_CUBE | GAMEMODE_SHIP | GAMEMODE_BALL | GAMEMODE_UFO | GAMEMODE_WAVE | GAMEMODE_ROBOT | GAMEMODE_SWING,
     HAS_BOUNDS = GAMEMODE_SHIP | GAMEMODE_BALL | GAMEMODE_UFO | GAMEMODE_WAVE | GAMEMODE_SPIDER | GAMEMODE_SWING,
     NO_BOUNDS = GAMEMODE_CUBE | GAMEMODE_ROBOT,
-    JUMP_CHANGES_GRAVITY = GAMEMODE_BALL | GAMEMODE_SWING,
+    JUMP_NEEDS_BUFFER = GAMEMODE_BALL | GAMEMODE_ROBOT | GAMEMODE_SPIDER,
 };
 
 enum PoolAlign

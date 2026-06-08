@@ -80,8 +80,10 @@ void LayoutGeneratorLayer::reset()
     m_isBuilding = true;
     m_boundsCeil = 1300.f;
     m_boundsFloor = 90.f;
+    m_canPlaceNextFrame = true;
     m_elapsedTime = LevelEditorLayer::get()->m_levelSettings->m_songOffset + getSettings()->getExtraSongOffset();
     m_hasTappedThisGamemode = false;
+    m_isClickingLastFrame = false;
     m_lastGamemodePortalPos = CCPoint{0.f, m_boundsFloor};
     m_lastPlacedFish = nullptr;
     m_lastPlacedFishPos = CCPoint{};
@@ -103,6 +105,8 @@ void LayoutGeneratorLayer::update(float dt)
         return;
 
     MACRO_PLAYER_DATA;
+
+    bool useRandomClicks = getSettings()->getUseRandomClicks();
 
     // paused
     if (!m_playerTrail.empty() && m_playerTrail[m_playerTrail.size() - 1].pos == playerPos)
@@ -143,41 +147,79 @@ void LayoutGeneratorLayer::update(float dt)
     bool onHalfBeat = (int)(m_elapsedTime / spb * 2.f) != (int)((m_elapsedTime + dt) / spb * 2.f);
 
     bool ok = false;
+    int excludeTags = 0;
     int requireTap = 0;
     if (m_placeAgainTimer >= 0)
         m_placeAgainTimer--;
-    if (m_placeAgainTimer == 0)
+    if (!useRandomClicks)
+    {
+        if (isClicking(player))
+        {
+            requireTap |= PoolTap::TAP | PoolTap::HOLD;
+            if (state & PoolState::NOT_FLYING)
+            {
+                // tap is buffered
+                if (player->m_stateRingJump)
+                    ok = true;
+                else
+                    excludeTags |= PoolTag::RING_BUFFERED;
+            }
+            else
+            {
+                if (!m_isClickingLastFrame)
+                    ok = true;
+                else
+                    excludeTags |= PoolTag::RING;
+            }
+        }
+        else
+        {
+            requireTap |= PoolTap::NO | PoolTap::ANY;
+        }
+    }
+
+    if (ok)
+        ;
+    else if (m_placeAgainTimer == 0)
     {
         ok = true;
-        if (m_lastPlacedFish->tags & PoolTag::SPIDER)
-            requireTap = PoolTap::NO | PoolTap::ANY;
+        if (useRandomClicks && m_lastPlacedFish->tags & PoolTag::SPIDER)
+            requireTap |= PoolTap::NO | PoolTap::ANY;
     }
     // avoid reaching terminal velocity (-15.f)
     else if (playerVel.y * sign < -10.f && onHalfBeat)
+    {
         ok = true;
+        excludeTags |= PoolTag::FALL;
+    }
     // beat
     else if (std::uniform_int_distribution<int>(1, 16)(getRng()) > 1 && onBeat)
+    {
         ok = true;
+    }
     // half beat
     else if (std::uniform_int_distribution<int>(1, 2)(getRng()) == 1 && onHalfBeat)
     {
         ok = true;
-        requireTap = PoolTap::TAP_OR_HOLD;
+        if (useRandomClicks)
+            requireTap |= PoolTap::TAP_OR_HOLD;
     }
     // flying fallback
     else if (gamemode & PoolState::FLYING && onHalfBeat)
         ok = true;
 
+    // only change gamemode, speed, and size on beat
+    if (!onBeat)
+        excludeTags |= PoolTag::GAMEMODE | PoolTag::SPEED | PoolTag::SIZE_;
+
     // continue placing a block platform
     if (m_lastPlacedFish && m_lastPlacedFish->keepActive)
-    {
         placeFish(m_lastPlacedFish, !ok, true);
-    }
 
     // place new object
-    if (ok)
+    if (ok && m_canPlaceNextFrame)
     {
-        auto fish = fishLegally(onBeat, requireTap);
+        auto fish = fishLegally(excludeTags, requireTap);
         if (fish)
         {
             placeFish(fish);
@@ -238,19 +280,26 @@ void LayoutGeneratorLayer::update(float dt)
             }
 
             // make sure the player lets go of jump for at least 1 frame before tapping a ring or robot jump
-            if (getSettings()->getUseRandomClicks() && fish->tap & PoolTap::TAP_OR_HOLD && isClicking(player))
+            if (useRandomClicks && fish->tap & PoolTap::TAP_OR_HOLD && isClicking(player))
             {
-                if (fish->tags & PoolTag::RING || (state & (PoolState::GAMEMODE_BALL | PoolState::GAMEMODE_ROBOT) && fish->tags & PoolTag::BLOCK) || player->m_isDashing)
+                if (fish->tags & PoolTag::RING || (state & PoolState::JUMP_NEEDS_BUFFER && fish->tags & PoolTag::BLOCK) || player->m_isDashing)
                 {
                     player->releaseButton(PlayerButton::Jump);
                     m_shouldTapTimer = std::max(1, m_shouldTapTimer);
                 }
             }
+
+            m_canPlaceNextFrame = false;
         }
         else
         {
             log::warn("fishing failed! last id: {}", m_fishId);
+            m_canPlaceNextFrame = true;
         }
+    }
+    else
+    {
+        m_canPlaceNextFrame = true;
     }
 
     // spikes v2
@@ -297,7 +346,7 @@ void LayoutGeneratorLayer::update(float dt)
             5.f);
 
     // jumping
-    if (getSettings()->getUseRandomClicks())
+    if (useRandomClicks)
     {
         if (m_shouldTapTimer > 0)
         {
@@ -335,11 +384,6 @@ void LayoutGeneratorLayer::update(float dt)
                         else
                             m_shouldTapTimer = 3;
                     }
-                    // make jump indicators in ufo and swing
-                    else
-                    {
-                        placeJumpIndicator(playerPos);
-                    }
                     m_shouldTap = PoolTap::NO;
                 }
             }
@@ -349,6 +393,11 @@ void LayoutGeneratorLayer::update(float dt)
             }
         }
     }
+    else
+    {
+        if (isClicking(player))
+            m_hasTappedThisGamemode = true;
+    }
 
     // mark trail
     auto trailObj = editor->createObject(isClicking(player) ? 1765 : 1764, playerPos, true);
@@ -356,11 +405,16 @@ void LayoutGeneratorLayer::update(float dt)
     trailObj->updateCustomScaleY(ok ? 2 : 0.5);
     trailObj->m_editorLayer = 1;
 
+    // jump indicators in ufo and swing
+    if (state & PoolState::TAP_FLYING && isClicking(player) && !m_isClickingLastFrame)
+        placeJumpIndicator(playerPos);
+
     m_elapsedTime += dt;
+    m_isClickingLastFrame = isClicking(player);
     m_lastPlayerGamemode = gamemode;
 }
 
-const PoolObject *LayoutGeneratorLayer::fishLegally(bool onBeat, int requireTap)
+const PoolObject *LayoutGeneratorLayer::fishLegally(int excludeTags, int requireTap)
 {
     MACRO_PLAYER_DATA;
 
@@ -378,11 +432,7 @@ const PoolObject *LayoutGeneratorLayer::fishLegally(bool onBeat, int requireTap)
         [&](const PoolObject *fish)
         {
             // tag blacklist
-            if (fish->tags & getSettings()->getExcludeTags())
-                return 0.f;
-
-            // only change gamemode, speed, and size on beat
-            if (!onBeat && fish->tags & (PoolTag::GAMEMODE | PoolTag::SPEED | PoolTag::SIZE_))
+            if (fish->tags & excludeTags || fish->tags & getSettings()->getExcludeTags())
                 return 0.f;
 
             // require tap
@@ -530,12 +580,12 @@ void LayoutGeneratorLayer::placeFish(const PoolObject *fish, bool dedup, bool us
         if (ok && !(fish->tags & PoolTag::RING))
         {
             primaryObjRect.origin += pos;
-            const float scanBehindPlayer = 15.f;
-            int stage = 0;
             for (auto it = m_playerTrail.rbegin(); it != m_playerTrail.rend(); ++it)
             {
                 auto trail = *it;
-                if (trail.pos.x < playerPos.x - scanBehindPlayer)
+                if (trail.pos.x > playerPos.x + 10.f)
+                    continue;
+                if (trail.pos.x < playerPos.x - 30.f)
                     break;
                 // construct the player rect
                 auto rect = CCRect(
@@ -549,20 +599,10 @@ void LayoutGeneratorLayer::placeFish(const PoolObject *fish, bool dedup, bool us
                 // check intersection
                 if (rect.intersectsRect(primaryObjRect))
                 {
-                    // first touch
-                    if (state == 0)
-                        state = 1;
-                    else
-                    // touch + release + touch again = interference
-                    {
-                        log::warn("{} {} CANCELLED due to trail interference!", m_fishId, fish->name);
-                        ok = false;
-                        break;
-                    }
+                    log::warn("{} {} CANCELLED due to trail interference!", m_fishId, fish->name);
+                    ok = false;
+                    break;
                 }
-                // touch + release
-                else if (state == 1)
-                    state = 2;
             }
         }
 
@@ -579,6 +619,8 @@ void LayoutGeneratorLayer::placeFish(const PoolObject *fish, bool dedup, bool us
                 primaryObj->setRotation(fish->rotation);
 
             primaryObjRect = getObjectRect(primaryObj);
+
+            // spider pad and ring patch
             if (fish->tags & PoolTag::SPIDER)
             {
                 if (fish->rotation == 180.f)
@@ -588,9 +630,24 @@ void LayoutGeneratorLayer::placeFish(const PoolObject *fish, bool dedup, bool us
                 }
                 primaryObj->customSetup();
             }
+
+            // every ring patch
             if (auto ringObj = typeinfo_cast<RingObject *>(primaryObj))
+            {
                 if (primaryObjRect.intersectsRect(playerRect))
+                {
+                    // yep this is all necessary
                     player->addToTouchedRings(ringObj);
+                    if (getSettings()->getUsePlayerClicks() && state & PoolState::FLYING && fish->tags & PoolTag::RING_LATE)
+                    {
+                        if (state & PoolState::GAMEMODE_SWING)
+                            player->flipGravity(!player->m_isUpsideDown, true);
+                        player->pushButton(PlayerButton::Jump);
+                    }
+                }
+            }
+
+            // place d blocks in wave
             if (fish->objectId == ObjectId::GAMEMODE_PORTAL_WAVE || (state & PoolState::GAMEMODE_WAVE && fish->objectId == ObjectId::BLOCK))
             {
                 auto dBlockObj = editor->createObject(ObjectId::D_BLOCK, pos, true);
@@ -601,7 +658,7 @@ void LayoutGeneratorLayer::placeFish(const PoolObject *fish, bool dedup, bool us
     }
 
     // place ground below spider taps, pads, and rings
-    if (fish->tags & PoolTag::SPIDER)
+    if (fish->tags & PoolTag::SPIDER && (getSettings()->getUseRandomClicks() || !(fish->tags & PoolTag::BLOCK)))
     {
         bool up = upsideDown != (bool)(fish->tags & PoolTag::GRAVITY);
         float yMin, yMax;
@@ -866,9 +923,9 @@ int LayoutGeneratorLayer::getPlayerState(PlayerObject *player)
     int state = 0;
 
     auto yv = player->getYVelocity() * (player->m_isUpsideDown ? -1 : 1);
-    if (yv > .5)
+    if (yv > 1.f)
         state |= PoolState::RISING;
-    else if (yv < -.5)
+    else if (yv < -1.f)
         state |= PoolState::FALLING;
     if (abs(yv) < 3)
         state |= PoolState::PEAKING;

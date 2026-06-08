@@ -23,6 +23,16 @@ bool SettingsPopup::init(Settings *settings)
 
     this->setTitle("Level Generator");
 
+    auto info = InfoAlertButton::create(
+        "Info",
+        "<cs>BPM</c>: Enter the song's BPM to make gameplay sync.\n"
+        "<cs>Use player clicks</c>: If enabled, the gameplay will form around your clicks. "
+        "If not, clicks will be inserted at random.",
+        .5f);
+    info->setID("info"_spr);
+    // WHYYYY DOES THIS NEED TO BE ADDED ON A SEPARATE LAYER????
+    m_buttonMenu->addChildAtPosition(info, Anchor::TopRight, CCPoint{-15.f, -15.f});
+
     auto bpm = TextInput::create(50.f, ZStringView());
     bpm->setCallback(
         [settings](const std::string &value)
@@ -63,16 +73,6 @@ bool SettingsPopup::init(Settings *settings)
     examples->setScale(0.3f);
     examples->setID("examples"_spr);
     m_mainLayer->addChildAtPosition(examples, Anchor::Center, CCPoint{0.f, -50.f});
-
-    auto info = InfoAlertButton::create(
-        "Info",
-        "<cs>BPM</c>: Enter the song's BPM to make gameplay sync.\n"
-        "<cs>Use player clicks</c>: If enabled, the gameplay will form around your clicks. "
-        "If not, clicks will be inserted at random.",
-        .5f);
-    info->setID("info"_spr);
-    // WHYYYY DOES THIS NEED TO BE ADDED ON A SEPARATE LAYER????
-    m_buttonMenu->addChildAtPosition(info, Anchor::TopRight, CCPoint{-15.f, -15.f});
 
     return true;
 }

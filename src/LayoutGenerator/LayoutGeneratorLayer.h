@@ -33,11 +33,15 @@ protected:
 
 	float m_boundsFloor = 0.f;
 
+	bool m_canPlaceNextFrame = false;
+
 	float m_elapsedTime = 0.f;
 
 	int m_fishId = 0;
 
 	bool m_hasTappedThisGamemode = false;
+
+	bool m_isClickingLastFrame = false;
 
 	CCPoint m_lastGamemodePortalPos;
 
@@ -68,7 +72,7 @@ protected:
 
 	void update(float dt) override;
 
-	const PoolObject *fishLegally(bool onBeat, int requireTap);
+	const PoolObject *fishLegally(int excludeTags, int requireTap);
 
 	void placeFish(const PoolObject *fish, bool dedup = false, bool useLastY = false);
 
