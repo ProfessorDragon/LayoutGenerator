@@ -117,7 +117,7 @@ const std::vector<PoolObject> GameObjectPool::POOL = []()
     pool.push_back(
         PoolObject("flying jump")
             .withTags(PoolTag::BLOCK | PoolTag::JUMP)
-            .withShares(50.f)
+            .withShares(25.f)
             .withObjectId(-1)
             .withStates(PoolState::TAP_FLYING)
             .withTap(PoolTap::TAP));
@@ -125,7 +125,7 @@ const std::vector<PoolObject> GameObjectPool::POOL = []()
     pool.push_back(
         PoolObject("flying hold")
             .withTags(PoolTag::BLOCK | PoolTag::JUMP)
-            .withShares(50.f)
+            .withShares(25.f)
             .withObjectId(-1)
             .withStates(PoolState::HOLD_FLYING)
             .withTap(PoolTap::HOLD));
@@ -160,7 +160,8 @@ const std::vector<PoolObject> GameObjectPool::POOL = []()
             .withTags(PoolTag::BLOCK)
             .withShares(12.5f)
             .withObjectId(ObjectId::BLOCK)
-            .withStates(PoolState::FLYING, PoolState::FALLING | PoolState::PEAKING)
+            // bugged specifically with mini wave, hence size_normal|not_wave
+            .withStates(PoolState::FLYING, PoolState::FALLING | PoolState::PEAKING, PoolState::SIZE_NORMAL | PoolState::NOT_WAVE)
             .withAlign(PoolAlign::BC, PoolAlign::TC)
             .withTap(PoolTap::NO)
             .withKeepActive(true));
@@ -224,16 +225,24 @@ const std::vector<PoolObject> GameObjectPool::POOL = []()
                 .withTap(PoolTap::TAP));
 
         pool.push_back(
-            PoolObject("jump ring flying")
+            PoolObject("jump ring hold flying")
                 .withPartial(p, PoolTag::RING_LATE)
-                .withStates(PoolState::FLYING, PoolState::NOT_WAVE)
+                .withShares(p.shares * .5f)
+                .withStates(PoolState::HOLD_FLYING, PoolState::NOT_WAVE)
                 .withTap(PoolTap::TAP));
 
         pool.push_back(
-            PoolObject("jump ring flying hold")
+            PoolObject("jump ring hold flying hold")
                 .withPartial(p, PoolTag::RING_LATE)
+                .withShares(p.shares * .5f)
                 .withStates(PoolState::HOLD_FLYING, PoolState::NOT_WAVE)
                 .withTap(PoolTap::HOLD));
+
+        pool.push_back(
+            PoolObject("jump ring tap flying")
+                .withPartial(p, PoolTag::RING_LATE)
+                .withStates(PoolState::TAP_FLYING)
+                .withTap(PoolTap::TAP));
     }
 
     // black rings
@@ -267,7 +276,7 @@ const std::vector<PoolObject> GameObjectPool::POOL = []()
             .withTags(PoolTag::RING_LATE | PoolTag::FALL)
             .withShares(.1f)
             .withObjectId(1330)
-            .withStates(PoolState::FLYING, PoolState::NOT_WAVE)
+            .withStates(PoolState::HOLD_FLYING, PoolState::NOT_WAVE)
             .withTap(PoolTap::HOLD));
 
     // spider pads and rings
@@ -396,7 +405,7 @@ const std::vector<PoolObject> GameObjectPool::POOL = []()
         pool.push_back(
             PoolObject("gravity portal flying")
                 .withTags(PoolTag::PORTAL | PoolTag::GRAVITY)
-                .withShares(5.f)
+                .withShares(10.f)
                 .withObjectId(10 + i)
                 .withStates(PoolState::FLYING, state)
                 .withAlign(PoolAlign::CR, PoolAlign::CL)
@@ -420,6 +429,7 @@ const std::vector<PoolObject> GameObjectPool::POOL = []()
         pool.push_back(
             PoolObject("size portal grounded")
                 .withTags(PoolTag::PORTAL | PoolTag::SIZE_)
+                .withShares(2.5f)
                 .withObjectId(99 + i * 2)
                 .withStates(PoolState::GROUNDED, state)
                 .withAlign(PoolAlign::BR, PoolAlign::BL)
@@ -428,6 +438,7 @@ const std::vector<PoolObject> GameObjectPool::POOL = []()
         pool.push_back(
             PoolObject("size portal falling")
                 .withTags(PoolTag::PORTAL | PoolTag::SIZE_)
+                .withShares(2.5f)
                 .withObjectId(99 + i * 2)
                 .withStates(PoolState::AIRBORNE, PoolState::FALLING, state)
                 .withAlign(PoolAlign::BC, PoolAlign::TC)
@@ -437,8 +448,19 @@ const std::vector<PoolObject> GameObjectPool::POOL = []()
         pool.push_back(
             PoolObject("size portal flying")
                 .withTags(PoolTag::PORTAL | PoolTag::SIZE_)
+                .withShares(2.5f)
                 .withObjectId(99 + i * 2)
-                .withStates(PoolState::FLYING, state)
+                .withStates(PoolState::FLYING, PoolState::NOT_WAVE, state)
+                .withAlign(PoolAlign::CR, PoolAlign::CL)
+                .withTap(PoolTap::ANY));
+
+        // increase shares for wave because it's cool
+        pool.push_back(
+            PoolObject("size portal wave")
+                .withTags(PoolTag::PORTAL | PoolTag::SIZE_)
+                .withShares(10.f)
+                .withObjectId(99 + i * 2)
+                .withStates(PoolState::GAMEMODE_WAVE, state)
                 .withAlign(PoolAlign::CR, PoolAlign::CL)
                 .withTap(PoolTap::ANY));
     }
@@ -458,7 +480,7 @@ const std::vector<PoolObject> GameObjectPool::POOL = []()
         if (i != 4)
             state |= PoolState::SPEED_4;
 
-        float shares = std::vector{5.f, 10.f, 5.f, 1.f, .5f}[i];
+        float shares = std::vector{2.5f, 10.f, 5.f, 2.5f, .5f}[i];
 
         pool.push_back(
             PoolObject("speed portal grounded")
