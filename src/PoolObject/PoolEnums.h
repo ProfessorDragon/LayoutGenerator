@@ -7,12 +7,16 @@ public:
     static const int BLOCK = 1;
     static const int BLOCK_LINE = 2;
     static const int SPIKE = 8;
-    static const int AIRBORNE_JUMP_INDICATOR = 236;
+    static const int JUMP_INDICATOR_FLYING = 236;
     static const int GAMEMODE_PORTAL_WAVE = 660;
     static const int TEXT = 914;
     static const int SLOPE = 1743;
     static const int SLOPE_GENTLE = 1744;
     static const int D_BLOCK = 1755;
+    static const int TRAIL_INDICATOR = 1764;
+    static const int TRAIL_INDICATOR_CLICKING = 1765;
+    static const int TRAIL_INDICATOR_PLACING = 1767;
+    static const int JUMP_INDICATOR_GROUNDED = 1768;
     static const int S_BLOCK = 1829;
 };
 

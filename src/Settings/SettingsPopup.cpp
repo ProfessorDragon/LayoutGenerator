@@ -59,7 +59,7 @@ bool SettingsPopup::init(Settings *settings)
         this,
         menu_selector(SettingsPopup::onCheckboxUsePlayerClicks));
     usePlayerClicks->setID("use-player-clicks"_spr);
-    m_mainLayer->addChildAtPosition(usePlayerClicks, Anchor::Center, CCPoint{185.f, 35.f});
+    m_mainLayer->addChildAtPosition(usePlayerClicks, Anchor::Center, CCPoint{185.f, 45.f});
 
     auto dontChangeGamemode = createCheckbox(
         "Dont change gamemode",
@@ -67,7 +67,15 @@ bool SettingsPopup::init(Settings *settings)
         this,
         menu_selector(SettingsPopup::onCheckboxDontChangeGamemode));
     dontChangeGamemode->setID("dont-change-gamemode"_spr);
-    m_mainLayer->addChildAtPosition(dontChangeGamemode, Anchor::Center, CCPoint{185.f, 15.f});
+    m_mainLayer->addChildAtPosition(dontChangeGamemode, Anchor::Center, CCPoint{185.f, 25.f});
+
+    auto makeDebugTrail = createCheckbox(
+        "Make debug trail",
+        settings->getMakeDebugTrail(),
+        this,
+        menu_selector(SettingsPopup::onCheckboxMakeDebugTrail));
+    makeDebugTrail->setID("make-debug-trail"_spr);
+    m_mainLayer->addChildAtPosition(makeDebugTrail, Anchor::Center, CCPoint{185.f, 5.f});
 
     auto examples = CCLabelBMFont::create(
         "Examples:\n"
@@ -113,6 +121,14 @@ void SettingsPopup::onCheckboxDontChangeGamemode(CCObject *sender)
     if (auto checkbox = static_cast<CCMenuItemToggler *>(sender))
     {
         m_settings->setExcludeTags(!checkbox->isToggled() ? PoolTag::GAMEMODE : 0);
+    }
+}
+
+void SettingsPopup::onCheckboxMakeDebugTrail(CCObject *sender)
+{
+    if (auto checkbox = static_cast<CCMenuItemToggler *>(sender))
+    {
+        m_settings->setMakeDebugTrail(!checkbox->isToggled());
     }
 }
 

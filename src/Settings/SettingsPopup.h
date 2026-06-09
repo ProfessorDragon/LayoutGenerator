@@ -20,5 +20,7 @@ protected:
 
     void onCheckboxDontChangeGamemode(CCObject *sender);
 
+    void onCheckboxMakeDebugTrail(CCObject *sender);
+
     void onCheckboxUsePlayerClicks(CCObject *sender);
 };

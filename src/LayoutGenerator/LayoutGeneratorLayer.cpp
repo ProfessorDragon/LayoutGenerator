@@ -138,7 +138,7 @@ void LayoutGeneratorLayer::update(float dt)
         m_lastGamemodePortalPos = player->m_lastPortalPos;
 
         if (gamemode & PoolState::TAP_FLYING && isClicking(player))
-            placeJumpIndicator(playerPos);
+            placeJumpIndicator(playerPos, state & PoolState::GRAVITY_REVERSE, true);
     }
 
     // place object on beat (spb = seconds per beat)
@@ -146,28 +146,28 @@ void LayoutGeneratorLayer::update(float dt)
     bool onBeat = (int)(m_elapsedTime / spb) != (int)((m_elapsedTime + dt) / spb);
     bool onHalfBeat = (int)(m_elapsedTime / spb * 2.f) != (int)((m_elapsedTime + dt) / spb * 2.f);
 
-    bool ok = false;
+    bool shouldPlace = false;
     int excludeTags = 0;
     int requireTap = 0;
     if (m_placeAgainTimer >= 0)
         m_placeAgainTimer--;
     if (!useRandomClicks)
     {
-        if (isClicking(player))
+        if (isClicking(player) && !player->m_isDashing)
         {
             requireTap |= PoolTap::TAP | PoolTap::HOLD;
             if (state & PoolState::NOT_FLYING)
             {
                 // tap is buffered
                 if (player->m_stateRingJump)
-                    ok = true;
+                    shouldPlace = true;
                 else
                     excludeTags |= PoolTag::RING_BUFFERED;
             }
             else
             {
                 if (!m_isClickingLastFrame)
-                    ok = true;
+                    shouldPlace = true;
                 else
                     excludeTags |= PoolTag::RING;
             }
@@ -178,46 +178,51 @@ void LayoutGeneratorLayer::update(float dt)
         }
     }
 
-    if (ok)
+    if (shouldPlace)
         ;
     else if (m_placeAgainTimer == 0)
     {
-        ok = true;
+        shouldPlace = true;
         if (useRandomClicks && m_lastPlacedFish->tags & PoolTag::SPIDER)
             requireTap |= PoolTap::NO | PoolTap::ANY;
     }
     // avoid reaching terminal velocity (-15.f)
     else if (playerVel.y * sign < -10.f && onHalfBeat)
     {
-        ok = true;
+        shouldPlace = true;
         excludeTags |= PoolTag::FALL;
     }
     // beat
     else if (std::uniform_int_distribution<int>(1, 16)(getRng()) > 1 && onBeat)
     {
-        ok = true;
+        shouldPlace = true;
         if (useRandomClicks && std::uniform_int_distribution<int>(1, 2)(getRng()) == 1)
             requireTap |= PoolTap::TAP_OR_HOLD;
     }
     // half beat
     else if (std::uniform_int_distribution<int>(1, 2)(getRng()) == 1 && onHalfBeat)
-        ok = true;
+        shouldPlace = true;
     // flying fallback
     else if (gamemode & PoolState::FLYING && onHalfBeat)
-        ok = true;
+        shouldPlace = true;
 
-    // only change gamemode, speed, and size on beat
-    if (!onBeat)
-        excludeTags |= PoolTag::GAMEMODE | PoolTag::SPEED | PoolTag::SIZE_;
+    // prevent placing two objects in two sequential frames
+    if (!m_canPlaceNextFrame)
+        shouldPlace = false;
 
     // continue placing a block platform
     if (m_lastPlacedFish && m_lastPlacedFish->keepActive)
-        placeFish(m_lastPlacedFish, !ok, true);
+        placeFish(m_lastPlacedFish, !shouldPlace, true);
 
     // place new object
-    if (ok && m_canPlaceNextFrame)
+    const PoolObject *fish;
+    if (shouldPlace)
     {
-        auto fish = fishLegally(excludeTags, requireTap);
+        // only change gamemode, speed, and size on beat
+        if (!onBeat)
+            excludeTags |= PoolTag::GAMEMODE | PoolTag::SPEED | PoolTag::SIZE_;
+
+        fish = fishLegally(excludeTags, requireTap);
         if (fish)
         {
             placeFish(fish);
@@ -397,15 +402,48 @@ void LayoutGeneratorLayer::update(float dt)
             m_hasTappedThisGamemode = true;
     }
 
-    // mark trail
-    auto trailObj = editor->createObject(isClicking(player) ? 1765 : 1764, playerPos, true);
-    trailObj->updateCustomScaleX(0.5);
-    trailObj->updateCustomScaleY(ok ? 2 : 0.5);
-    trailObj->m_editorLayer = 1;
+    // make debug trail
+    if (getSettings()->getMakeDebugTrail())
+    {
+        auto trailObj = editor->createObject(
+            isClicking(player) ? ObjectId::TRAIL_INDICATOR_CLICKING : ObjectId::TRAIL_INDICATOR,
+            playerPos,
+            true);
+        trailObj->updateCustomScaleX(0.5);
+        trailObj->updateCustomScaleY(0.5);
+        trailObj->m_editorLayer = 1;
 
-    // jump indicators in ufo and swing
-    if (state & PoolState::TAP_FLYING && isClicking(player) && !m_isClickingLastFrame)
-        placeJumpIndicator(playerPos);
+        if (fish)
+        {
+            auto trailObj2 = editor->createObject(ObjectId::TRAIL_INDICATOR_PLACING, playerPos, true);
+            trailObj2->updateCustomScaleX(2.0);
+            trailObj2->updateCustomScaleY(0.5);
+            trailObj2->setRotation(90.f);
+            trailObj2->m_editorLayer = 1;
+        }
+    }
+
+    // jump indicators
+    if (getSettings()->getMakeJumpIndicators())
+    {
+        if (state & PoolState::NOT_FLYING)
+        {
+            // consecutive jumps NEVER REGISTER THE PLAYER AS GROUNDED!!!
+            // idk what to do here, maybe it's fine as is
+            if (m_playerTrail.size() > 1)
+            {
+                auto trail = m_playerTrail[m_playerTrail.size() - 2];
+                // absolutely miserable workaround
+                if (isClicking(player) && (m_isClickingLastFrame || !useRandomClicks) && trail.state & PoolState::GROUNDED && trail.pos.y != playerPos.y)
+                    placeJumpIndicator(trail.pos, trail.state & PoolState::GRAVITY_REVERSE, false);
+            }
+        }
+        else if (state & PoolState::TAP_FLYING)
+        {
+            if (isClicking(player) && !m_isClickingLastFrame && (fish == nullptr || !(fish->tags & PoolTag::RING)))
+                placeJumpIndicator(playerPos, state & PoolState::GRAVITY_REVERSE, true);
+        }
+    }
 
     m_elapsedTime += dt;
     m_isClickingLastFrame = isClicking(player);
@@ -675,7 +713,7 @@ void LayoutGeneratorLayer::placeFish(const PoolObject *fish, bool dedup, bool us
     }
 
     // place label
-    if (!useLastY)
+    if (getSettings()->getMakeDebugTrail() && !useLastY)
     {
         placeLabel(
             fish->name,
@@ -691,12 +729,23 @@ void LayoutGeneratorLayer::placeFish(const PoolObject *fish, bool dedup, bool us
     m_lastPlacedFishPos = pos;
 }
 
-void LayoutGeneratorLayer::placeJumpIndicator(CCPoint pos)
+void LayoutGeneratorLayer::placeJumpIndicator(CCPoint pos, bool isUpsideDown, bool isFlying)
 {
-    auto jumpIndicatorObj = LevelEditorLayer::get()->createObject(ObjectId::AIRBORNE_JUMP_INDICATOR, pos, true);
-    jumpIndicatorObj->updateCustomScaleX(0.5);
-    jumpIndicatorObj->updateCustomScaleY(0.5);
-    jumpIndicatorObj->m_editorLayer = 1;
+    int sign = isUpsideDown ? -1 : 1;
+    auto obj = LevelEditorLayer::get()->createObject(
+        isFlying ? ObjectId::JUMP_INDICATOR_FLYING : ObjectId::JUMP_INDICATOR_GROUNDED,
+        pos + CCPoint{0.f, isFlying ? 0.f : -5.f * sign},
+        true);
+    if (isFlying)
+    {
+        obj->updateCustomScaleX(0.5);
+        obj->updateCustomScaleY(0.5);
+    }
+    else
+    {
+        obj->setRotation(90.f * sign);
+    }
+    obj->m_editorLayer = 1;
 }
 
 void LayoutGeneratorLayer::placeLabel(std::string text, CCPoint pos)

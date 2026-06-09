@@ -10,6 +10,10 @@ protected:
 
     const float extraSongOffset = 0.133f; // offset for better sync - experimental
 
+    bool makeDebugTrail = false;
+
+    const bool makeJumpIndicators = true;
+
     bool usePlayerClicks = false;
 
 public:
@@ -22,6 +26,12 @@ public:
     void setExcludeTags(int excludeTags) { this->excludeTags = excludeTags; }
 
     float getExtraSongOffset() { return extraSongOffset; }
+
+    bool getMakeDebugTrail() { return makeDebugTrail; }
+
+    void setMakeDebugTrail(bool makeDebugTrail) { this->makeDebugTrail = makeDebugTrail; }
+
+    bool getMakeJumpIndicators() { return makeJumpIndicators; }
 
     bool getUsePlayerClicks() { return usePlayerClicks; }
 
