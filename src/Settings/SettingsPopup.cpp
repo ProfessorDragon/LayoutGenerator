@@ -21,7 +21,7 @@ bool SettingsPopup::init(Settings *settings)
 
     m_settings = settings;
 
-    this->setTitle("Level Generator");
+    this->setTitle("Layout Generator");
 
     auto info = InfoAlertButton::create(
         "Info",
