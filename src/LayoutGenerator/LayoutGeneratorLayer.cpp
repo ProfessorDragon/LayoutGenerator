@@ -666,11 +666,7 @@ void LayoutGeneratorLayer::placeFish(const PoolObject *fish, bool dedup, bool us
 
             // place d blocks in wave
             if (fish->objectId == ObjectId::GAMEMODE_PORTAL_WAVE || (state & PoolState::GAMEMODE_WAVE && fish->objectId == ObjectId::BLOCK))
-            {
-                auto dBlockObj = editor->createObject(ObjectId::D_BLOCK, pos, true);
-                dBlockObj->updateCustomScaleX(3.0);
-                dBlockObj->updateCustomScaleY(3.0);
-            }
+                placeDBlock(pos);
         }
     }
 
@@ -690,16 +686,25 @@ void LayoutGeneratorLayer::placeFish(const PoolObject *fish, bool dedup, bool us
             yMin = state & PoolState::HAS_BOUNDS ? m_boundsFloor : yMax - 150.f;
         }
         float y = std::uniform_real_distribution<float>(yMin, yMax)(getRng());
+        bool didPlace;
         while (true)
         {
             auto obj = editor->createObject(ObjectId::BLOCK, CCPoint{playerPos.x + playerVel.x, y}, true);
             if (!doesRectInterfereWithTrail(getObjectRect(obj), playerPos.x, true, state & PoolState::SIZE_MINI))
+            {
+                didPlace = true;
                 break;
+            }
             editor->removeObject(obj, true);
             if (state & PoolState::HAS_BOUNDS)
+            {
+                didPlace = false;
                 break;
+            }
             y += 30.f * (up ? 1 : -1);
         }
+        if (didPlace && state & PoolState::GAMEMODE_WAVE)
+            placeDBlock(CCPoint{playerPos.x + playerVel.x, y});
     }
 
     // place label
@@ -709,7 +714,7 @@ void LayoutGeneratorLayer::placeFish(const PoolObject *fish, bool dedup, bool us
             fish->name,
             CCPoint{pos.x, pos.y - 60.f});
         placeLabel(
-            std::format("{}", m_fishId),
+            std::to_string(m_fishId),
             CCPoint{pos.x, pos.y - 67.5f});
     }
 
@@ -717,6 +722,22 @@ void LayoutGeneratorLayer::placeFish(const PoolObject *fish, bool dedup, bool us
     m_fishId++;
     m_lastPlacedFish = fish;
     m_lastPlacedFishPos = pos;
+}
+
+void LayoutGeneratorLayer::placeCreditText(std::string text, CCPoint pos)
+{
+    auto textObj = static_cast<TextGameObject *>(LevelEditorLayer::get()->createObject(ObjectId::TEXT, pos, true));
+    textObj->updateCustomScaleX(0.5);
+    textObj->updateCustomScaleY(0.5);
+    textObj->m_zLayer = ZLayer::T2;
+    textObj->updateTextObject(text, false);
+}
+
+void LayoutGeneratorLayer::placeDBlock(CCPoint pos)
+{
+    auto dBlockObj = LevelEditorLayer::get()->createObject(ObjectId::D_BLOCK, pos, true);
+    dBlockObj->updateCustomScaleX(3.0);
+    dBlockObj->updateCustomScaleY(3.0);
 }
 
 void LayoutGeneratorLayer::placeJumpIndicator(CCPoint pos, bool isUpsideDown, bool isFlying)
@@ -1035,10 +1056,12 @@ void LayoutGeneratorLayer::onBuildButton(CCObject *)
     // start building
     else
     {
-        reset();
-        editor->m_editorUI->onPlaytest(nullptr);
-        // parse guides?
+        // for parsing guides:
         // use editor->m_levelSettings->m_guidelineString, split on ~0~
+        reset();
+        placeCreditText("made with", CCPoint{105.f, 300.f});
+        placeCreditText("layout generator", CCPoint{105.f, 285.f});
+        editor->m_editorUI->onPlaytest(nullptr);
     }
 }
 

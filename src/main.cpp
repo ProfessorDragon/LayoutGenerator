@@ -1,13 +1,8 @@
 #include <Geode/Geode.hpp>
+#include <Geode/ui/BasedButtonSprite.hpp>
 #include "LayoutGenerator/LayoutGeneratorLayer.h"
 
 using namespace geode::prelude;
-
-// class $modify(PlayerObject) {
-//     void pushButton(PlayerButton button) {
-//         PlayerObject::pushButton(button);
-//     }
-// };
 
 // LevelEditorLayer
 
@@ -56,8 +51,10 @@ class $modify(MyEditorUI, EditorUI)
 		if (!EditorUI::init(editorLayer))
 			return false;
 
-		auto buildSprite = CCSprite::createWithSpriteFrameName("GJ_everyplayBtn_001.png");
-		buildSprite->setScale(0.75f);
+		// auto buildSprite = CCSprite::createWithSpriteFrameName("GJ_everyplayBtn_001.png");
+		// buildSprite->setScale(0.75f);
+		auto buildSprite = CircleButtonSprite::createWithSpriteFrameName("button.png"_spr, 1.2f, CircleBaseColor::Blue);
+		buildSprite->setScale(0.83f);
 		auto buildButton = CCMenuItemSpriteExtra::create(
 			buildSprite,
 			getBuilder(),
@@ -111,18 +108,18 @@ class $modify(MyEditorUI, EditorUI)
 	}
 };
 
-$on_game(Loaded){
-	// auto levelManager = LocalLevelManager::get();
-	// if (!levelManager)
-	// {
-	// 	log::error("Failed to get LocalLevelManager instance.");
-	// 	return;
-	// }
+// $on_game(Loaded){
+// 	auto levelManager = LocalLevelManager::get();
+// 	if (!levelManager)
+// 	{
+// 		log::error("Failed to get LocalLevelManager instance.");
+// 		return;
+// 	}
 
-	// if (levelManager->m_localLevels)
-	// {
-	// 	auto level = static_cast<GJGameLevel *>(levelManager->m_localLevels->objectAtIndex(0));
-	// 	auto scene = LevelEditorLayer::scene(level, false);
-	// 	CCDirector::sharedDirector()->pushScene(scene);
-	// }
-};
+// 	if (levelManager->m_localLevels)
+// 	{
+// 		auto level = static_cast<GJGameLevel *>(levelManager->m_localLevels->objectAtIndex(0));
+// 		auto scene = LevelEditorLayer::scene(level, false);
+// 		CCDirector::sharedDirector()->pushScene(scene);
+// 	}
+// };

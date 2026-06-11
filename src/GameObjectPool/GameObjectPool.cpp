@@ -168,7 +168,7 @@ const std::vector<PoolObject> GameObjectPool::POOL = []()
     pool.push_back(
         PoolObject("hold flying platform")
             .withTags(PoolTag::BLOCK)
-            .withShares(5.f)
+            .withShares(2.5f)
             .withObjectId(ObjectId::BLOCK)
             // bugged specifically with mini wave, hence size_normal|not_wave
             .withStates(PoolState::HOLD_FLYING, PoolState::FALLING | PoolState::PEAKING, PoolState::SIZE_NORMAL | PoolState::NOT_WAVE)
@@ -179,7 +179,7 @@ const std::vector<PoolObject> GameObjectPool::POOL = []()
     pool.push_back(
         PoolObject("hold flying platform hold")
             .withTags(PoolTag::BLOCK)
-            .withShares(5.f)
+            .withShares(2.5f)
             .withObjectId(ObjectId::BLOCK)
             .withStates(PoolState::HOLD_FLYING, PoolState::RISING | PoolState::PEAKING, PoolState::SIZE_NORMAL | PoolState::NOT_WAVE)
             .withAlign(PoolAlign::TC, PoolAlign::BC)

@@ -76,6 +76,10 @@ protected:
 
 	void placeFish(const PoolObject *fish, bool dedup = false, bool useLastY = false);
 
+	void placeCreditText(std::string text, CCPoint pos);
+
+	void placeDBlock(CCPoint pos);
+
 	void placeJumpIndicator(CCPoint pos, bool isUpsideDown, bool isFlying);
 
 	void placeLabel(std::string text, CCPoint pos);

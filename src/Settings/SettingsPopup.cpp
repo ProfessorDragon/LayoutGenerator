@@ -28,7 +28,9 @@ bool SettingsPopup::init(Settings *settings)
         "<cs>BPM</c>: Enter the song's BPM to make gameplay sync.\n"
         "<cs>Use player clicks</c>: If enabled, the gameplay will form around your clicks. "
         "If not, clicks will be inserted at random.\n"
-        "<cs>Don't change gamemode</c>: Prevents gamemode portals from spawning.",
+        "<cs>Don't change gamemode</c>: Prevents gamemode portals from spawning.\n"
+        "<cs>Make debug trail</c>: Leaves an object trail behind the player while generating. "
+        "An X indicates the jump button is pressed.",
         .5f);
     info->setID("info"_spr);
     // WHYYYY DOES THIS NEED TO BE ADDED ON A SEPARATE LAYER????
@@ -51,7 +53,13 @@ bool SettingsPopup::init(Settings *settings)
     bpm->setMaxCharCount(8);
     bpm->focus();
     bpm->setID("bpm-input"_spr);
-    m_mainLayer->addChildAtPosition(bpm, Anchor::Top, CCPoint{-110.f, -75.f});
+    m_mainLayer->addChildAtPosition(bpm, Anchor::Top, CCPoint{-115.f, -75.f});
+
+    auto col = CCMenu::create();
+    col->setLayout(
+        ColumnLayout::create()
+            ->setAxisReverse(true)
+            ->setGap(2.f));
 
     auto usePlayerClicks = createCheckbox(
         "Use player clicks",
@@ -59,7 +67,7 @@ bool SettingsPopup::init(Settings *settings)
         this,
         menu_selector(SettingsPopup::onCheckboxUsePlayerClicks));
     usePlayerClicks->setID("use-player-clicks"_spr);
-    m_mainLayer->addChildAtPosition(usePlayerClicks, Anchor::Top, CCPoint{185.f, -55.f});
+    col->addChild(usePlayerClicks);
 
     auto dontChangeGamemode = createCheckbox(
         "Dont change gamemode",
@@ -67,7 +75,7 @@ bool SettingsPopup::init(Settings *settings)
         this,
         menu_selector(SettingsPopup::onCheckboxDontChangeGamemode));
     dontChangeGamemode->setID("dont-change-gamemode"_spr);
-    m_mainLayer->addChildAtPosition(dontChangeGamemode, Anchor::Top, CCPoint{185.f, -75.f});
+    col->addChild(dontChangeGamemode);
 
     auto makeDebugTrail = createCheckbox(
         "Make debug trail",
@@ -75,7 +83,13 @@ bool SettingsPopup::init(Settings *settings)
         this,
         menu_selector(SettingsPopup::onCheckboxMakeDebugTrail));
     makeDebugTrail->setID("make-debug-trail"_spr);
-    m_mainLayer->addChildAtPosition(makeDebugTrail, Anchor::Top, CCPoint{185.f, -95.f});
+    col->addChild(makeDebugTrail);
+
+    col->setAnchorPoint(CCPoint{0.f, 0.5f});
+    col->setScale(0.5f);
+    col->updateLayout();
+    col->setID("checkbox-column"_spr);
+    m_mainLayer->addChildAtPosition(col, Anchor::Top, CCPoint{-65.f, -75.f});
 
     auto examples = CCLabelBMFont::create(
         "Examples:\n"
@@ -102,15 +116,12 @@ CCMenu *SettingsPopup::createCheckbox(char const *label, bool initialValue, coco
     auto row = CCMenu::create();
     row->setLayout(
         RowLayout::create()
-            ->setAxisAlignment(AxisAlignment::Start)
-            ->setAutoScale(false));
+            ->setAxisAlignment(AxisAlignment::Start)); //->setAutoScale(false));
 
     auto checkbox = CCMenuItemToggler::createWithStandardSprites(target, callback, 1.f);
-    checkbox->setScale(0.5f);
     checkbox->toggle(initialValue);
 
     auto labelNode = CCLabelBMFont::create(label, "bigFont.fnt");
-    labelNode->setScale(0.45f);
 
     row->addChild(checkbox);
     row->addChild(labelNode);
