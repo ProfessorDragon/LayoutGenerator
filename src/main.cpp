@@ -11,7 +11,7 @@ class $modify(MyLevelEditorLayer, LevelEditorLayer)
 {
 	struct Fields
 	{
-		LayoutGeneratorLayer *m_builder;
+		LayoutGeneratorLayer *m_builder = nullptr;
 	};
 
 	bool init(GJGameLevel *level, bool noUI)

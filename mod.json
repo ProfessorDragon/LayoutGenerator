@@ -14,6 +14,10 @@
 	"dependencies": {
 		"geode.node-ids": ">=v1.23.3"
 	},
+	"issues": {
+		"info": "Message me on Discord @professordragon, or sumbit an issue on GitHub.",
+		"url": "https://github.com/ProfessorDragon/LayoutGenerator/issues"
+	},
 	"links": {
 		"source": "https://github.com/ProfessorDragon/LayoutGenerator"
 	},

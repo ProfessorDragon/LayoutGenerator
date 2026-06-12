@@ -1,25 +1,13 @@
 #pragma once
+
 #include "../PoolObject/PoolEnums.h"
 #include <Geode/Geode.hpp>
 
 using namespace geode::prelude;
 
+class PlayerData;
+class PlayerTrailData;
 class PoolObject;
-
-struct PlayerTrailData
-{
-	CCPoint pos;
-
-	CCPoint vel;
-
-	float rectWidth;
-
-	int state;
-
-	float boundsCeil;
-
-	float boundsFloor;
-};
 
 class LayoutGeneratorLayer : public CCLayer
 {
@@ -45,7 +33,7 @@ protected:
 
 	CCPoint m_lastGamemodePortalPos;
 
-	const PoolObject *m_lastPlacedFish;
+	const PoolObject *m_lastPlacedFish = nullptr;
 
 	CCPoint m_lastPlacedFishPos;
 
@@ -70,11 +58,17 @@ protected:
 
 	void reset();
 
+	// start building
+	void buildStart();
+
+	// stop building (via the EditorUI, which later calls playtestStopped)
+	void buildStop();
+
 	void update(float dt) override;
 
-	const PoolObject *fishLegally(int excludeTags, int requireTap);
+	const PoolObject *fishLegally(PlayerData *pd, int excludeTags, int requireTap);
 
-	void placeFish(const PoolObject *fish, bool dedup = false, bool useLastY = false);
+	void placeFish(PlayerData *pd, const PoolObject *fish, bool dedup = false, bool useLastY = false);
 
 	void placeCreditText(std::string text, CCPoint pos);
 
@@ -95,8 +89,6 @@ protected:
 	void placeSpikeInBounds(CCPoint pos, const PlayerTrailData &trail, bool flipY);
 
 	bool doesRectInterfereWithTrail(CCRect primaryObjRect, float playerX, bool isBlock, bool isMini);
-
-	bool isClicking(PlayerObject *player);
 
 	bool isOutOfBounds(float y, float height, bool hasUpperBound, float boundsCeil, float boundsFloor);
 

@@ -1,4 +1,5 @@
 #pragma once
+
 #include <Geode/Geode.hpp>
 
 using namespace geode::prelude;
@@ -11,7 +12,7 @@ public:
     static SettingsPopup *create(Settings *settings);
 
 protected:
-    Settings *m_settings;
+    Settings *m_settings = nullptr;
 
 protected:
     bool init(Settings *settings);

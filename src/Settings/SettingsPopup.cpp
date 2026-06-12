@@ -1,5 +1,6 @@
 #include "SettingsPopup.h"
 #include "Settings.h"
+#include <fmt/base.h>
 
 SettingsPopup *SettingsPopup::create(Settings *settings)
 {
@@ -45,10 +46,7 @@ bool SettingsPopup::init(Settings *settings)
                 settings->setBpm(result.unwrap());
         });
     // float to string frfr
-    std::string s = std::to_string(settings->getBpm()).substr(0, 8);
-    while (s.contains(".") && (s.ends_with("0") || s.ends_with(".")))
-        s = s.substr(0, s.length() - 1);
-    bpm->setString(s);
+    bpm->setString(fmt::format("{:g}", settings->getBpm()).substr(0, 8));
     bpm->setFilter("1234567890.");
     bpm->setLabel("BPM");
     bpm->setMaxCharCount(8);
