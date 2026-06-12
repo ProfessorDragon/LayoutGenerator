@@ -34,13 +34,6 @@ class $modify(MyLevelEditorLayer, LevelEditorLayer)
 #include <Geode/modify/EditorUI.hpp>
 class $modify(MyEditorUI, EditorUI)
 {
-	struct Fields
-	{
-		CCMenuItemSpriteExtra *m_buildButton;
-
-		CCMenuItemSpriteExtra *m_settingsButton;
-	};
-
 	LayoutGeneratorLayer *getBuilder()
 	{
 		return static_cast<MyLevelEditorLayer *>(m_editorLayer)->m_fields->m_builder;
@@ -51,8 +44,6 @@ class $modify(MyEditorUI, EditorUI)
 		if (!EditorUI::init(editorLayer))
 			return false;
 
-		// auto buildSprite = CCSprite::createWithSpriteFrameName("GJ_everyplayBtn_001.png");
-		// buildSprite->setScale(0.75f);
 		auto buildSprite = CircleButtonSprite::createWithSpriteFrameName("button.png"_spr, 1.2f, CircleBaseColor::Blue);
 		buildSprite->setScale(0.83f);
 		auto buildButton = CCMenuItemSpriteExtra::create(
@@ -71,39 +62,23 @@ class $modify(MyEditorUI, EditorUI)
 		auto menu = getChildByID("playback-menu");
 		menu->addChild(buildButton);
 		menu->addChild(settingsButton);
-		m_fields->m_buildButton = buildButton;
-		m_fields->m_settingsButton = settingsButton;
+		m_uiItems->addObject(buildButton);
+		m_uiItems->addObject(settingsButton);
 		menu->updateLayout();
 
 		return true;
 	}
 
-	/**
-	 * playtest is started from the playtest button or build button
-	 */
-	void onPlaytest(CCObject *sender)
-	{
-		EditorUI::onPlaytest(sender);
-		m_fields->m_buildButton->setVisible(false);
-		m_fields->m_settingsButton->setVisible(false);
-	}
+	// playtest is started from the playtest button or build button
+	// void onPlaytest(CCObject *sender);
 
-	/**
-	 * playtest is stopped from the playtest button
-	 */
-	void onStopPlaytest(CCObject *sender)
-	{
-		EditorUI::onStopPlaytest(sender);
-	}
+	// playtest is stopped from the playtest button
+	// void onStopPlaytest(CCObject *sender);
 
-	/**
-	 * playtest is stopped from the playtest button, player death, or build button
-	 */
+	// playtest is stopped from the playtest button, player death, or build button
 	void playtestStopped()
 	{
 		EditorUI::playtestStopped();
-		m_fields->m_buildButton->setVisible(true);
-		m_fields->m_settingsButton->setVisible(true);
 		getBuilder()->playtestStopped();
 	}
 };

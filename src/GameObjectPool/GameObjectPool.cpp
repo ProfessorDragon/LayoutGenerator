@@ -599,7 +599,7 @@ const std::vector<PoolObject> GameObjectPool::POOL = []()
     return pool;
 }();
 
-const PoolObject *GameObjectPool::fish(std::mt19937 &rng, std::function<float(const PoolObject *)> filter)
+const PoolObject *GameObjectPool::fish(std::function<float(const PoolObject *)> filter)
 {
     std::vector<std::tuple<const PoolObject *, float>> filtered;
     float totalShares = 0.f;
@@ -616,7 +616,7 @@ const PoolObject *GameObjectPool::fish(std::mt19937 &rng, std::function<float(co
     if (filtered.empty())
         return nullptr;
 
-    float n = std::uniform_real_distribution<float>(0, totalShares)(rng);
+    float n = utils::random::generate<float>(0, totalShares);
     for (auto tup : filtered)
     {
         n -= std::get<1>(tup);

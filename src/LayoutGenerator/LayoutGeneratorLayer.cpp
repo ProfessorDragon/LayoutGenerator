@@ -14,12 +14,6 @@
     PoolState gamemode = getPlayerGamemode(player);                                                   \
     int state = getPlayerState(player);
 
-std::mt19937 &getRng()
-{
-    static std::mt19937 rng(std::random_device{}());
-    return rng;
-}
-
 Settings *getSettings()
 {
     static Settings settings;
@@ -193,14 +187,14 @@ void LayoutGeneratorLayer::update(float dt)
         excludeTags |= PoolTag::FALL;
     }
     // beat
-    else if (std::uniform_int_distribution<int>(1, 16)(getRng()) > 1 && onBeat)
+    else if (utils::random::chance(15.0 / 16.0) && onBeat)
     {
         shouldPlace = true;
-        if (useRandomClicks && std::uniform_int_distribution<int>(1, 2)(getRng()) == 1)
+        if (useRandomClicks && utils::random::chance(0.5))
             requireTap |= PoolTap::TAP_OR_HOLD;
     }
     // half beat
-    else if (std::uniform_int_distribution<int>(1, 2)(getRng()) == 1 && onHalfBeat)
+    else if (utils::random::chance(0.5) && onHalfBeat)
         shouldPlace = true;
     // flying fallback
     else if (gamemode & PoolState::FLYING && onHalfBeat)
@@ -259,11 +253,11 @@ void LayoutGeneratorLayer::update(float dt)
                 m_tapBalance -= 1.f;
                 if (gamemode & PoolState::NOT_FLYING)
                     m_shouldTap = PoolTap::NO;
-                else if (gamemode & PoolState::HOLD_FLYING && std::uniform_int_distribution<int>(1, 2)(getRng()) == 1)
-                    m_shouldTap = std::uniform_int_distribution<int>(1, 2)(getRng()) == 1 ? PoolTap::NO : PoolTap::HOLD;
+                else if (gamemode & PoolState::HOLD_FLYING && utils::random::chance(0.5))
+                    m_shouldTap = utils::random::chance(0.5) ? PoolTap::NO : PoolTap::HOLD;
                 // place another object soon, because we can
                 // maybe a fish->canPlaceAgain field would be useful in the future? or fish->placeAgainChance?
-                if (std::uniform_int_distribution<int>(1, 2)(getRng()) == 1)
+                if (utils::random::chance(0.5))
                 {
                     m_placeAgainTimer = 2;
                     // ensure we have enough ground for the next fish if the player is grounded currently
@@ -278,7 +272,7 @@ void LayoutGeneratorLayer::update(float dt)
             }
 
             // place a no-tap object after a spider tap
-            if (fish->tags & PoolTag::SPIDER && std::uniform_int_distribution<int>(1, 2)(getRng()) == 1)
+            if (fish->tags & PoolTag::SPIDER && utils::random::chance(0.5))
             {
                 m_placeAgainTimer = 2;
             }
@@ -358,9 +352,9 @@ void LayoutGeneratorLayer::update(float dt)
         else if (m_shouldTap == PoolTap::RANDOM)
         {
             // 50% chance to toggle the jump button, every couple of frames
-            if (std::uniform_int_distribution<int>(1, 2)(getRng()) == 1)
+            if (utils::random::chance(0.5))
             {
-                m_shouldTapTimer = std::uniform_int_distribution<int>(2, 4)(getRng());
+                m_shouldTapTimer = utils::random::generate<int>(2, 5);
                 if (isClicking(player))
                     player->releaseButton(PlayerButton::Jump);
                 else
@@ -383,7 +377,7 @@ void LayoutGeneratorLayer::update(float dt)
                     {
                         // hold for a random duration
                         if (m_shouldTap == PoolTap::HOLD_RANDOM)
-                            m_shouldTapTimer = std::uniform_int_distribution<int>(2, 20)(getRng());
+                            m_shouldTapTimer = utils::random::generate<int>(2, 21);
                         else
                             m_shouldTapTimer = 3;
                     }
@@ -464,7 +458,6 @@ const PoolObject *LayoutGeneratorLayer::fishLegally(int excludeTags, int require
         isBlind = abs(playerPos.y - m_playerTrail[m_playerTrail.size() - 18].pos.y) > 130.f;
 
     return GameObjectPool::fish(
-        getRng(),
         [&](const PoolObject *fish)
         {
             // tag blacklist
@@ -685,7 +678,7 @@ void LayoutGeneratorLayer::placeFish(const PoolObject *fish, bool dedup, bool us
             yMax = playerPos.y - (fish->tags & PoolTag::GRAVITY ? 30.f : 60.f);
             yMin = state & PoolState::HAS_BOUNDS ? m_boundsFloor : yMax - 150.f;
         }
-        float y = std::uniform_real_distribution<float>(yMin, yMax)(getRng());
+        float y = utils::random::generate<float>(yMin, yMax);
         bool didPlace;
         while (true)
         {
