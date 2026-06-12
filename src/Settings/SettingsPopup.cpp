@@ -44,9 +44,10 @@ bool SettingsPopup::init(Settings *settings)
             if (result.isOk())
                 settings->setBpm(result.unwrap());
         });
-    std::string s = std::to_string(settings->getBpm());
-    while (s.ends_with("0") || s.ends_with("."))
-        s = s.substr(0, s.size() - 1);
+    // float to string frfr
+    std::string s = std::to_string(settings->getBpm()).substr(0, 8);
+    while (s.contains(".") && (s.ends_with("0") || s.ends_with(".")))
+        s = s.substr(0, s.length() - 1);
     bpm->setString(s);
     bpm->setFilter("1234567890.");
     bpm->setLabel("BPM");
