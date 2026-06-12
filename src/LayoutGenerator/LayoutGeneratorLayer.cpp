@@ -122,6 +122,25 @@ void LayoutGeneratorLayer::update(float dt)
     // paused
     if (!m_playerTrail.empty() && m_playerTrail.back().pos == pd->pos)
         return;
+
+    // playertraildata
+    if (!m_playerTrail.empty())
+    {
+        PlayerTrailData *trail = &m_playerTrail.back();
+        CCPoint trailPos = trail->pos;
+
+        // fill in the gaps when a spider pad/ring is hit
+        const float spiderFillDistance = 30.f;
+        while (abs(trailPos.y - pd->pos.y) > spiderFillDistance)
+        {
+            trailPos.y += spiderFillDistance * (trailPos.y > pd->pos.y ? -1 : 1);
+            PlayerTrailData spiderFillTrail(*trail);
+            spiderFillTrail.pos = trailPos;
+            m_playerTrail.push_back(spiderFillTrail);
+            if (getSettings()->getMakeDebugTrail())
+                placeDebugTrailClicking(trailPos, pd->isClicking());
+        }
+    }
     m_playerTrail.push_back(PlayerTrailData{
         pd->pos,
         pd->vel,
@@ -423,22 +442,9 @@ void LayoutGeneratorLayer::update(float dt)
     // make debug trail
     if (getSettings()->getMakeDebugTrail())
     {
-        auto trailObj = editor->createObject(
-            pd->isClicking() ? ObjectId::TRAIL_INDICATOR_CLICKING : ObjectId::TRAIL_INDICATOR,
-            pd->pos,
-            true);
-        trailObj->updateCustomScaleX(0.5);
-        trailObj->updateCustomScaleY(0.5);
-        trailObj->m_editorLayer = 1;
-
+        placeDebugTrailClicking(pd->pos, pd->isClicking());
         if (fish)
-        {
-            auto trailObj2 = editor->createObject(ObjectId::TRAIL_INDICATOR_PLACING, pd->pos, true);
-            trailObj2->updateCustomScaleX(2.0);
-            trailObj2->updateCustomScaleY(0.5);
-            trailObj2->setRotation(90.f);
-            trailObj2->m_editorLayer = 1;
-        }
+            placeDebugTrailBar(pd->pos);
     }
 
     // jump indicators
@@ -594,9 +600,12 @@ void LayoutGeneratorLayer::placeFish(PlayerData *pd, const PoolObject *fish, boo
     else if (fish->alignPlayer & PoolAlign::R)
         pos.x += playerRect.size.width / 2.f;
 
+    bool shouldPlace = false;
     GameObject *primaryObj = nullptr;
     if (fish->objectId >= 0)
     {
+        shouldPlace = true;
+
         auto tempObj = editor->createObject(fish->objectId, CCPoint{}, true);
         if (pd->isUpsideDown())
         {
@@ -621,24 +630,23 @@ void LayoutGeneratorLayer::placeFish(PlayerData *pd, const PoolObject *fish, boo
             pos.y = m_lastPlacedFishPos.y;
 
         // check if ok to place the object at the new position
-        bool ok = true;
         if (isOutOfBounds(pos.y, primaryObjRect.size.height, pd->state & PoolState::HAS_BOUNDS))
-            ok = false;
+            shouldPlace = false;
         else if (dedup && getObjectNearPoint(pos, 24.f, fish->objectId) != nullptr)
-            ok = false;
+            shouldPlace = false;
 
         // check if the object interferes with the last couple frames
-        if (ok && !(fish->tags & PoolTag::RING))
+        if (shouldPlace && !(fish->tags & PoolTag::RING))
         {
             primaryObjRect.origin += pos;
             if (doesRectInterfereWithTrail(primaryObjRect, pd->pos.x, fish->tags & PoolTag::BLOCK, pd->state & PoolState::SIZE_MINI))
             {
-                ok = false;
-                log::warn("{} {} CANCELLED due to trail interference!", m_fishId, fish->name);
+                shouldPlace = false;
+                log::debug("{} {} CANCELLED due to trail interference!", m_fishId, fish->name);
             }
         }
 
-        if (ok)
+        if (shouldPlace)
         {
             primaryObj = editor->createObject(fish->objectId, pos, true);
             if (pd->isUpsideDown())
@@ -686,7 +694,13 @@ void LayoutGeneratorLayer::placeFish(PlayerData *pd, const PoolObject *fish, boo
     }
 
     // place ground below spider taps, pads, and rings
-    if (fish->tags & PoolTag::SPIDER && (getSettings()->getUseRandomClicks() || !(fish->tags & PoolTag::BLOCK)))
+    if (
+        fish->tags & PoolTag::SPIDER
+        // if usePlayerClicks is true, it won't work. the player would already have teleported
+        // before it has the chance to place the block.
+        && (getSettings()->getUseRandomClicks() || !(fish->tags & PoolTag::BLOCK))
+        // ensure the fish was actually placed
+        && (fish->objectId < 0 || shouldPlace))
     {
         bool up = pd->isUpsideDown() != (bool)(fish->tags & PoolTag::GRAVITY);
         float yMin, yMax;
@@ -750,9 +764,29 @@ void LayoutGeneratorLayer::placeCreditText(std::string text, CCPoint pos)
 
 void LayoutGeneratorLayer::placeDBlock(CCPoint pos)
 {
-    auto dBlockObj = LevelEditorLayer::get()->createObject(ObjectId::D_BLOCK, pos, true);
-    dBlockObj->updateCustomScaleX(3.0);
-    dBlockObj->updateCustomScaleY(3.0);
+    auto obj = LevelEditorLayer::get()->createObject(ObjectId::D_BLOCK, pos, true);
+    obj->updateCustomScaleX(3.0);
+    obj->updateCustomScaleY(3.0);
+}
+
+void LayoutGeneratorLayer::placeDebugTrailBar(CCPoint pos)
+{
+    auto obj = LevelEditorLayer::get()->createObject(ObjectId::TRAIL_INDICATOR_PLACING, pos, true);
+    obj->updateCustomScaleX(2.0);
+    obj->updateCustomScaleY(0.5);
+    obj->setRotation(90.f);
+    obj->m_editorLayer = 1;
+}
+
+void LayoutGeneratorLayer::placeDebugTrailClicking(CCPoint pos, bool isClicking)
+{
+    auto obj = LevelEditorLayer::get()->createObject(
+        isClicking ? ObjectId::TRAIL_INDICATOR_CLICKING : ObjectId::TRAIL_INDICATOR,
+        pos,
+        true);
+    obj->updateCustomScaleX(0.5);
+    obj->updateCustomScaleY(0.5);
+    obj->m_editorLayer = 1;
 }
 
 void LayoutGeneratorLayer::placeJumpIndicator(CCPoint pos, bool isUpsideDown, bool isFlying)
@@ -885,7 +919,7 @@ bool LayoutGeneratorLayer::doesRectInterfereWithTrail(CCRect primaryObjRect, flo
     for (auto it = m_playerTrail.rbegin(); it != m_playerTrail.rend(); ++it)
     {
         auto trail = *it;
-        if (trail.pos.x > playerX + 10.f)
+        if (trail.pos.x > playerX - 10.f)
             continue;
         if (trail.pos.x < playerX - 30.f)
             break;
@@ -903,7 +937,10 @@ bool LayoutGeneratorLayer::doesRectInterfereWithTrail(CCRect primaryObjRect, flo
 
         // check intersection
         if (rect.intersectsRect(primaryObjRect))
+        {
+            log::debug("interfere x = {}", trail.pos.x - playerX);
             return true;
+        }
     }
 
     return false;
@@ -911,7 +948,7 @@ bool LayoutGeneratorLayer::doesRectInterfereWithTrail(CCRect primaryObjRect, flo
 
 bool LayoutGeneratorLayer::isOutOfBounds(float y, float height, bool hasUpperBound, float boundsCeil, float boundsFloor)
 {
-    return y + height / 2.f < boundsFloor || (y - height / 2.f > boundsCeil && hasUpperBound);
+    return y + height / 2.f <= boundsFloor || (y - height / 2.f >= boundsCeil && hasUpperBound);
 }
 
 bool LayoutGeneratorLayer::isOutOfBounds(float y, float height, bool hasUpperBound)

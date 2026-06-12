@@ -21,7 +21,7 @@ struct PlayerData
 
     bool isUpsideDown() { return player->m_isUpsideDown; }
 
-    bool getSign() { return isUpsideDown() ? -1 : 1; }
+    int getSign() { return isUpsideDown() ? -1 : 1; }
 };
 
 struct PlayerTrailData

@@ -74,6 +74,10 @@ protected:
 
 	void placeDBlock(CCPoint pos);
 
+	void placeDebugTrailBar(CCPoint pos);
+
+	void placeDebugTrailClicking(CCPoint pos, bool isClicking);
+
 	void placeJumpIndicator(CCPoint pos, bool isUpsideDown, bool isFlying);
 
 	void placeLabel(std::string text, CCPoint pos);
