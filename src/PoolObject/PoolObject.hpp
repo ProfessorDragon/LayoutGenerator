@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Geode/Geode.hpp>
-#include "PoolEnums.h"
+#include "PoolEnums.hpp"
 
 using namespace geode::prelude;
 

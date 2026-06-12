@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../PoolObject/PoolEnums.h"
+#include "../PoolObject/PoolEnums.hpp"
 #include <Geode/Geode.hpp>
 
 using namespace geode::prelude;

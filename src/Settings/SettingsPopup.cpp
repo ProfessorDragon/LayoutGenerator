@@ -1,5 +1,5 @@
-#include "SettingsPopup.h"
-#include "Settings.h"
+#include "SettingsPopup.hpp"
+#include "Settings.hpp"
 #include <fmt/base.h>
 
 SettingsPopup *SettingsPopup::create(Settings *settings)

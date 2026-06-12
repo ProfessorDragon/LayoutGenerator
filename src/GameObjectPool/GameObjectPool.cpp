@@ -1,5 +1,5 @@
-#include "GameObjectPool.h"
-#include "../PoolObject/PoolObject.h"
+#include "GameObjectPool.hpp"
+#include "../PoolObject/PoolObject.hpp"
 #include <random>
 
 const std::vector<PoolObject> GameObjectPool::POOL = []()

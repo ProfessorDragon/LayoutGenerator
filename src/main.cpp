@@ -1,6 +1,6 @@
 #include <Geode/Geode.hpp>
 #include <Geode/ui/BasedButtonSprite.hpp>
-#include "LayoutGenerator/LayoutGeneratorLayer.h"
+#include "LayoutGenerator/LayoutGeneratorLayer.hpp"
 
 using namespace geode::prelude;
 

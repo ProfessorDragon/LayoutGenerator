@@ -1,9 +1,9 @@
-#include "LayoutGeneratorLayer.h"
-#include "../GameObjectPool/GameObjectPool.h"
+#include "LayoutGeneratorLayer.hpp"
+#include "../GameObjectPool/GameObjectPool.hpp"
 #include "../PlayerData/PlayerData.hpp"
-#include "../PoolObject/PoolObject.h"
-#include "../Settings/Settings.h"
-#include "../Settings/SettingsPopup.h"
+#include "../PoolObject/PoolObject.hpp"
+#include "../Settings/Settings.hpp"
+#include "../Settings/SettingsPopup.hpp"
 
 Settings *getSettings()
 {
