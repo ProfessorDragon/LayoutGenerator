@@ -278,7 +278,6 @@ void LayoutGeneratorLayer::update(float dt)
         if (fish)
         {
             placeFish(pd, fish);
-            // log::debug("{} {} {}", m_halfBeatCount, m_placeAgainTimer, m_elapsedTime);
 
             // adjust tap balance
             if (fish->tap != PoolTap::ANY)
@@ -469,13 +468,10 @@ void LayoutGeneratorLayer::update(float dt)
         if (pd->state & PoolState::NOT_FLYING)
         {
             // consecutive jumps NEVER REGISTER THE PLAYER AS GROUNDED!!!
-            // idk what to do here, maybe it's fine as is
-            if (trailLastFrame)
-            {
-                // absolutely miserable workaround
-                if (pd->isClicking() && (m_isClickingLastFrame || !useRandomClicks) && trailLastFrame->state & PoolState::GROUNDED && trailLastFrame->pos.y != pd->pos.y)
-                    placeJumpIndicator(trailLastFrame->pos, trailLastFrame->state & PoolState::GRAVITY_REVERSE, false);
-            }
+            // it's mostly fine but sometimes counts jump pads as jumps
+            // (absolutely miserable workaround)
+            if (pd->isClicking() && (m_isClickingLastFrame || !useRandomClicks) && trailLastFrame && trailLastFrame->state & PoolState::GROUNDED && trailLastFrame->pos.y != pd->pos.y)
+                placeJumpIndicator(trailLastFrame->pos, trailLastFrame->state & PoolState::GRAVITY_REVERSE, false);
         }
         else if (pd->state & PoolState::TAP_FLYING)
         {
@@ -621,7 +617,8 @@ void LayoutGeneratorLayer::placeFish(PlayerData *pd, const PoolObject *fish, boo
     {
         shouldPlace = true;
 
-        auto tempObj = editor->createObject(fish->objectId, CCPoint{}, true);
+        // I TRIED THIS AND IT CRASHED THE GAME BUT NOW IT WORKS I GUESS???
+        auto tempObj = GameObject::createWithKey(fish->objectId);
         if (pd->isUpsideDown())
         {
             if (fish->canFlip())
@@ -631,21 +628,20 @@ void LayoutGeneratorLayer::placeFish(PlayerData *pd, const PoolObject *fish, boo
         else
             tempObj->setRotation(fish->rotation);
 
-        auto primaryObjRect = getObjectRect(tempObj);
-        editor->removeObject(tempObj, true);
+        auto tempObjRect = getObjectRect(tempObj);
         if (fish->alignObject & PoolAlign::T)
-            pos.y -= primaryObjRect.getMaxY() * pd->getSign();
+            pos.y -= tempObjRect.getMaxY() * pd->getSign();
         else if (fish->alignObject & PoolAlign::B)
-            pos.y -= primaryObjRect.getMinY() * pd->getSign();
+            pos.y -= tempObjRect.getMinY() * pd->getSign();
         if (fish->alignObject & PoolAlign::L)
-            pos.x -= primaryObjRect.getMinX();
+            pos.x -= tempObjRect.getMinX();
         else if (fish->alignObject & PoolAlign::R)
-            pos.x -= primaryObjRect.getMaxX();
+            pos.x -= tempObjRect.getMaxX();
         if (useLastY)
             pos.y = m_lastPlacedFishPos.y;
 
         // check if ok to place the object at the new position
-        if (isOutOfBounds(pos.y, primaryObjRect.size.height, pd->state & PoolState::HAS_BOUNDS))
+        if (isOutOfBounds(pos.y, tempObjRect.size.height, pd->state & PoolState::HAS_BOUNDS))
             shouldPlace = false;
         else if (dedup && getObjectNearPoint(pos, 24.f, fish->objectId) != nullptr)
             shouldPlace = false;
@@ -653,8 +649,8 @@ void LayoutGeneratorLayer::placeFish(PlayerData *pd, const PoolObject *fish, boo
         // check if the object interferes with the last couple frames
         if (shouldPlace && !(fish->tags & PoolTag::RING))
         {
-            primaryObjRect.origin += pos;
-            if (doesRectInterfereWithTrail(primaryObjRect, pd->pos.x, fish->tags & PoolTag::BLOCK, pd->state & PoolState::SIZE_MINI))
+            tempObjRect.origin += pos;
+            if (doesRectInterfereWithTrail(tempObjRect, pd->pos.x, fish->tags & PoolTag::BLOCK, pd->state & PoolState::SIZE_MINI))
             {
                 shouldPlace = false;
                 log::debug("{} {} CANCELLED due to trail interference!", m_fishId, fish->name);
@@ -673,7 +669,7 @@ void LayoutGeneratorLayer::placeFish(PlayerData *pd, const PoolObject *fish, boo
             else
                 primaryObj->setRotation(fish->rotation);
 
-            primaryObjRect = getObjectRect(primaryObj);
+            auto primaryObjRect = getObjectRect(primaryObj);
 
             // spider pad and ring patch
             if (fish->tags & PoolTag::SPIDER)
@@ -729,26 +725,28 @@ void LayoutGeneratorLayer::placeFish(PlayerData *pd, const PoolObject *fish, boo
             yMax = pd->pos.y - (fish->tags & PoolTag::GRAVITY ? 30.f : 60.f);
             yMin = pd->state & PoolState::HAS_BOUNDS ? m_boundsFloor : yMax - 150.f;
         }
-        float y = utils::random::generate<float>(yMin, yMax);
+        CCPoint pos{pd->pos.x + pd->vel.x, utils::random::generate<float>(yMin, yMax)};
+        auto tempObj = GameObject::createWithKey(ObjectId::BLOCK);
         bool didPlace;
         while (true)
         {
-            auto obj = editor->createObject(ObjectId::BLOCK, CCPoint{pd->pos.x + pd->vel.x, y}, true);
-            if (!doesRectInterfereWithTrail(getObjectRect(obj), pd->pos.x, true, pd->state & PoolState::SIZE_MINI))
+            auto tempObjRect = getObjectRect(tempObj);
+            tempObjRect.origin += pos;
+            if (!doesRectInterfereWithTrail(tempObjRect, pd->pos.x, true, pd->state & PoolState::SIZE_MINI))
             {
+                editor->createObject(ObjectId::BLOCK, pos, true);
                 didPlace = true;
                 break;
             }
-            editor->removeObject(obj, true);
             if (pd->state & PoolState::HAS_BOUNDS)
             {
                 didPlace = false;
                 break;
             }
-            y += 30.f * (up ? 1 : -1);
+            pos.y += 30.f * (up ? 1 : -1);
         }
         if (didPlace && pd->state & PoolState::GAMEMODE_WAVE)
-            placeDBlock(CCPoint{pd->pos.x + pd->vel.x, y});
+            placeDBlock(pos);
     }
 
     // place label
@@ -932,18 +930,17 @@ void LayoutGeneratorLayer::placeSpikeInBounds(CCPoint pos, const PlayerTrailData
     }
 }
 
-bool LayoutGeneratorLayer::doesRectInterfereWithTrail(CCRect primaryObjRect, float playerX, bool isBlock, bool isMini)
+bool LayoutGeneratorLayer::doesRectInterfereWithTrail(CCRect rect, float playerX, bool isBlock, bool isMini)
 {
     for (auto it = m_playerTrail.rbegin(); it != m_playerTrail.rend(); ++it)
     {
         auto trail = *it;
         if (trail.pos.x > playerX - 10.f)
             continue;
-        if (trail.pos.x < playerX - 30.f)
+        if (trail.pos.x < playerX - 45.f)
             break;
 
-        // construct the player rect
-        auto rect = CCRect(
+        auto playerRect = CCRect(
             trail.pos.x - trail.rectWidth / 2.f,
             trail.pos.y - trail.rectWidth / 2.f,
             trail.rectWidth,
@@ -951,10 +948,9 @@ bool LayoutGeneratorLayer::doesRectInterfereWithTrail(CCRect primaryObjRect, flo
 
         // shrink slightly if it's a block because of the inner hitbox tolerance
         if (isBlock)
-            rect.inflateRect(isMini ? -2.f : -5.f);
+            playerRect.inflateRect(isMini ? -2.f : -4.f);
 
-        // check intersection
-        if (rect.intersectsRect(primaryObjRect))
+        if (playerRect.intersectsRect(rect))
         {
             log::debug("interfere x = {}", trail.pos.x - playerX);
             return true;
