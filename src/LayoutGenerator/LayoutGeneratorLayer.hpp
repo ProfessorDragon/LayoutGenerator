@@ -27,6 +27,8 @@ protected:
 
 	int m_fishId = 0;
 
+	int m_halfBeatCount = 0;
+
 	bool m_hasTappedThisGamemode = false;
 
 	bool m_isClickingLastFrame = false;

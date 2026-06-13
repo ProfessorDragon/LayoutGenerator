@@ -1,3 +1,9 @@
+# 1.0.4
+
+- Fixed an issue where too many objects would be placed at >60 FPS
+- The war on crashes continues
+
+
 # 1.0.3
 
 - Maybe fixed random crashes

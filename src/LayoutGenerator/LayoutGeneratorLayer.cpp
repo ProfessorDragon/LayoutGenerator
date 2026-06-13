@@ -67,6 +67,7 @@ void LayoutGeneratorLayer::reset()
     m_boundsFloor = 90.f;
     m_canPlaceNextFrame = true;
     m_elapsedTime = LevelEditorLayer::get()->m_levelSettings->m_songOffset + getSettings()->getExtraSongOffset();
+    m_halfBeatCount = 0;
     m_hasTappedThisGamemode = false;
     m_isClickingLastFrame = false;
     m_lastGamemodePortalPos = CCPoint{0.f, m_boundsFloor};
@@ -75,7 +76,7 @@ void LayoutGeneratorLayer::reset()
     m_lastPlayerGamemode = PoolState::GAMEMODE_CUBE;
     m_lastSpikeBottomPos = CCPoint{};
     m_lastSpikeTopPos = CCPoint{};
-    m_placeAgainTimer = 0;
+    m_placeAgainTimer = -1;
     m_playerTrail.clear();
     m_shouldTap = PoolTap::NO;
     m_shouldTapTimer = 0;
@@ -115,7 +116,9 @@ void LayoutGeneratorLayer::update(float dt)
         return;
     }
     pd->pos = pd->player->getPosition();
-    pd->vel = CCPoint{(float)pd->player->getCurrentXVelocity(), (float)pd->player->getYVelocity()};
+    pd->vel = CCPoint{
+        (float)pd->player->getCurrentXVelocity() * 60.f * dt,
+        (float)pd->player->getYVelocity() * 60.f * dt};
     pd->gamemode = getPlayerGamemode(pd->player);
     pd->state = getPlayerState(pd->player);
 
@@ -124,18 +127,24 @@ void LayoutGeneratorLayer::update(float dt)
         return;
 
     // playertraildata
+    PlayerTrailData *trailLastFrame = nullptr;
     if (!m_playerTrail.empty())
     {
-        PlayerTrailData *trail = &m_playerTrail.back();
-        CCPoint trailPos = trail->pos;
+        trailLastFrame = &m_playerTrail.back();
+        CCPoint trailPos = trailLastFrame->pos;
 
         // fill in the gaps when a spider pad/ring is hit
         const float spiderFillDistance = 30.f;
         while (abs(trailPos.y - pd->pos.y) > spiderFillDistance)
         {
             trailPos.y += spiderFillDistance * (trailPos.y > pd->pos.y ? -1 : 1);
-            PlayerTrailData spiderFillTrail(*trail);
+            PlayerTrailData spiderFillTrail(*trailLastFrame);
             spiderFillTrail.pos = trailPos;
+            if (spiderFillTrail.state & PoolState::GROUNDED)
+            {
+                spiderFillTrail.state &= ~PoolState::GROUNDED;
+                spiderFillTrail.state |= PoolState::AIRBORNE;
+            }
             m_playerTrail.push_back(spiderFillTrail);
             if (getSettings()->getMakeDebugTrail())
                 placeDebugTrailClicking(trailPos, pd->isClicking());
@@ -180,8 +189,14 @@ void LayoutGeneratorLayer::update(float dt)
 
     // place object on beat (spb = seconds per beat)
     float spb = 60.f / getSettings()->getBpm();
-    bool onBeat = (int)(m_elapsedTime / spb) != (int)((m_elapsedTime + dt) / spb);
-    bool onHalfBeat = (int)(m_elapsedTime / spb * 2.f) != (int)((m_elapsedTime + dt) / spb * 2.f);
+    bool onBeat = false;
+    bool onHalfBeat = false;
+    if ((int)(m_elapsedTime / spb * 2.f) > m_halfBeatCount)
+    {
+        onBeat = m_halfBeatCount % 2 == 0;
+        onHalfBeat = true;
+        m_halfBeatCount++;
+    }
 
     bool shouldPlace = false;
     int excludeTags = 0;
@@ -224,7 +239,7 @@ void LayoutGeneratorLayer::update(float dt)
             requireTap |= PoolTap::NO | PoolTap::ANY;
     }
     // avoid reaching terminal velocity (-15.f)
-    else if (pd->vel.y * pd->getSign() < -10.f && onHalfBeat)
+    else if (pd->player->getYVelocity() * pd->getSign() < -10.f && onHalfBeat)
     {
         shouldPlace = true;
         excludeTags |= PoolTag::FALL;
@@ -263,6 +278,7 @@ void LayoutGeneratorLayer::update(float dt)
         if (fish)
         {
             placeFish(pd, fish);
+            // log::debug("{} {} {}", m_halfBeatCount, m_placeAgainTimer, m_elapsedTime);
 
             // adjust tap balance
             if (fish->tap != PoolTap::ANY)
@@ -454,12 +470,11 @@ void LayoutGeneratorLayer::update(float dt)
         {
             // consecutive jumps NEVER REGISTER THE PLAYER AS GROUNDED!!!
             // idk what to do here, maybe it's fine as is
-            if (m_playerTrail.size() > 1)
+            if (trailLastFrame)
             {
-                auto trail = m_playerTrail[m_playerTrail.size() - 2];
                 // absolutely miserable workaround
-                if (pd->isClicking() && (m_isClickingLastFrame || !useRandomClicks) && trail.state & PoolState::GROUNDED && trail.pos.y != pd->pos.y)
-                    placeJumpIndicator(trail.pos, trail.state & PoolState::GRAVITY_REVERSE, false);
+                if (pd->isClicking() && (m_isClickingLastFrame || !useRandomClicks) && trailLastFrame->state & PoolState::GROUNDED && trailLastFrame->pos.y != pd->pos.y)
+                    placeJumpIndicator(trailLastFrame->pos, trailLastFrame->state & PoolState::GRAVITY_REVERSE, false);
             }
         }
         else if (pd->state & PoolState::TAP_FLYING)
@@ -960,58 +975,53 @@ GameObject *LayoutGeneratorLayer::getObjectNearPoint(CCPoint point, float radius
 {
     auto editor = LevelEditorLayer::get();
 
+    for (int i = 0; i < editor->m_objects->count(); i++)
+    {
+        GameObject *obj = static_cast<GameObject *>(editor->m_objects->objectAtIndex(i));
+        if (obj == nullptr)
+            continue;
+        if (objectId >= 0 && obj->m_objectID != objectId)
+            continue;
+        auto pos = obj->getPosition();
+        if (pow(pos.x - point.x, 2) + pow(pos.y - point.y, 2) <= pow(radius, 2))
+            return obj;
+    }
+
     // if the point might be offscreen, iterate through all of the objects.
     // checking by section only works for things that are onscreen.
     // the editor camera stops roughly around y = 1300.
-    bool mayBeOffscreen = point.y > 1300.f;
+    // bool mayBeOffscreen = point.y > 1300.f;
 
-    if (mayBeOffscreen)
-    {
-        for (int i = 0; i < editor->m_objects->count(); i++)
-        {
-            GameObject *obj = static_cast<GameObject *>(editor->m_objects->objectAtIndex(i));
-            if (obj == nullptr)
-                continue;
-            if (objectId >= 0 && obj->m_objectID != objectId)
-                continue;
-            auto pos = obj->getPosition();
-            if (pow(pos.x - point.x, 2) + pow(pos.y - point.y, 2) <= pow(radius, 2))
-                return obj;
-        }
-    }
-    else
-    {
+    // using editor->m_sections is more efficient but i think it causes crashes
+    // int xSectionCenter = std::max(0, (int)(point.x / 100));
+    // int ySectionCenter = std::max(0, (int)(point.y / 100));
 
-        int xSectionCenter = std::max(0, (int)(point.x / 100));
-        int ySectionCenter = std::max(0, (int)(point.y / 100));
+    // for (int xSection = xSectionCenter - 1; xSection <= xSectionCenter + 1; xSection++)
+    // {
+    //     for (int ySection = ySectionCenter - 1; ySection <= ySectionCenter + 1; ySection++)
+    //     {
+    //         if (xSection > editor->m_sections.size() - 1 || editor->m_sections[xSection] == nullptr)
+    //             continue;
 
-        for (int xSection = xSectionCenter - 1; xSection <= xSectionCenter + 1; xSection++)
-        {
-            for (int ySection = ySectionCenter - 1; ySection <= ySectionCenter + 1; ySection++)
-            {
-                if (xSection > editor->m_sections.size() - 1 || editor->m_sections[xSection] == nullptr)
-                    continue;
+    //         auto &col = *editor->m_sections[xSection];
+    //         if (ySection > col.size() - 1 || col[ySection] == nullptr)
+    //             continue;
 
-                auto &col = *editor->m_sections[xSection];
-                if (ySection > col.size() - 1 || col[ySection] == nullptr)
-                    continue;
-
-                for (auto &obj : *col[ySection])
-                {
-                    if (obj == nullptr)
-                        continue;
-                    // WHY IS THIS A FIELD ROBTOP
-                    if (!obj->m_isActivated)
-                        continue;
-                    if (objectId >= 0 && obj->m_objectID != objectId)
-                        continue;
-                    auto pos = obj->getPosition();
-                    if (pow(pos.x - point.x, 2) + pow(pos.y - point.y, 2) <= pow(radius, 2))
-                        return obj;
-                }
-            }
-        }
-    }
+    //         for (auto &obj : *col[ySection])
+    //         {
+    //             if (obj == nullptr)
+    //                 continue;
+    //             // WHY IS THIS A FIELD ROBTOP
+    //             if (!obj->m_isActivated)
+    //                 continue;
+    //             if (objectId >= 0 && obj->m_objectID != objectId)
+    //                 continue;
+    //             auto pos = obj->getPosition();
+    //             if (pow(pos.x - point.x, 2) + pow(pos.y - point.y, 2) <= pow(radius, 2))
+    //                 return obj;
+    //         }
+    //     }
+    // }
 
     return nullptr;
 }
