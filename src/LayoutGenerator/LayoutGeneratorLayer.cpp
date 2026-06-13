@@ -235,7 +235,7 @@ void LayoutGeneratorLayer::update(float dt)
     else if (m_placeAgainTimer == 0)
     {
         shouldPlace = true;
-        if (useRandomClicks && m_lastPlacedFish->tags & PoolTag::SPIDER)
+        if (useRandomClicks && m_lastPlacedFish && m_lastPlacedFish->tags & PoolTag::SPIDER)
             requireTap |= PoolTap::NO | PoolTap::ANY;
     }
     // avoid reaching terminal velocity (-15.f)
@@ -364,8 +364,8 @@ void LayoutGeneratorLayer::update(float dt)
     const float scanBehindPlayer = 60.f;
     float yMin = FLT_MAX;
     float yMax = -FLT_MAX;
-    PlayerTrailData leftTrail;
-    PlayerTrailData midTrail;
+    PlayerTrailData leftTrail{};
+    PlayerTrailData midTrail{};
     float spikeX = pd->pos.x - scanBehindPlayer / 2;
     for (auto it = m_playerTrail.rbegin(); it != m_playerTrail.rend(); ++it)
     {
@@ -530,7 +530,7 @@ const PoolObject *LayoutGeneratorLayer::fishLegally(PlayerData *pd, int excludeT
                 return 0.f;
 
             // tapping a green orb that results in the player dying to the floor boundary
-            if (pd->state & PoolState::NO_BOUNDS && !pd->isUpsideDown() && pd->pos.y < m_boundsFloor + 135.f && fish->tags & PoolTag::FALL && fish->tags && PoolTag::GRAVITY)
+            if (pd->state & PoolState::NO_BOUNDS && !pd->isUpsideDown() && pd->pos.y < m_boundsFloor + 135.f && fish->tags & PoolTag::FALL && fish->tags & PoolTag::GRAVITY)
                 return 0.f;
 
             // changing gamemode when it hasn't tapped yet
@@ -925,7 +925,10 @@ void LayoutGeneratorLayer::placeSpikeInBounds(CCPoint pos, const PlayerTrailData
 {
     if (!isOutOfBounds(pos.y, 12.f, trail.state & PoolState::HAS_BOUNDS, trail.boundsCeil, trail.boundsFloor))
     {
-        LevelEditorLayer::get()->createObject(ObjectId::SPIKE, pos, true)->setFlipY(flipY);
+        if (auto spike = LevelEditorLayer::get()->createObject(ObjectId::SPIKE, pos, true))
+        {
+            spike->setFlipY(flipY);
+        }
     }
 }
 
