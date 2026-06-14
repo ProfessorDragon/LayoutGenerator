@@ -1,3 +1,12 @@
+# 1.1.0
+
+- Added more settings
+- Implement Geode settings menu which saves across sessions
+- Updated button sprites
+- Enabled editor preview when placing speed portals
+- Fixed object spam when using a song offset
+
+
 # 1.0.4
 
 - Fixed an issue where too many objects would be placed at >60 FPS

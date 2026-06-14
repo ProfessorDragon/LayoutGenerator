@@ -989,8 +989,10 @@ bool LayoutGeneratorLayer::isOutOfBounds(float y, float height, bool hasUpperBou
 GameObject *LayoutGeneratorLayer::getObjectNearPoint(CCPoint point, float radius, int objectId)
 {
     auto editor = LevelEditorLayer::get();
+    auto length = editor->m_objects->count();
 
-    for (int i = 0; i < editor->m_objects->count(); i++)
+    // only iterate over the most recent objects for efficiency
+    for (int i = length - 1; i > std::max(0, (int)length - 100); i--)
     {
         GameObject *obj = static_cast<GameObject *>(editor->m_objects->objectAtIndex(i));
         if (obj == nullptr)
