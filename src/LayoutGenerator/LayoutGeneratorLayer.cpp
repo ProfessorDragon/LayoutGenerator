@@ -56,13 +56,12 @@ bool LayoutGeneratorLayer::init()
 void LayoutGeneratorLayer::reset()
 {
     auto mod = Mod::get();
-    const float extraSongOffset = 0.133f; // offset for better sync - experimental
 
     m_isBuilding = true;
     m_boundsCeil = 1300.f;
     m_boundsFloor = 90.f;
     m_canPlaceNextFrame = true;
-    m_elapsedTime = LevelEditorLayer::get()->m_levelSettings->m_songOffset + extraSongOffset;
+    m_elapsedTime = LevelEditorLayer::get()->m_levelSettings->m_songOffset + .133f; // offset for better sync
     m_halfBeatCount = (int)(m_elapsedTime / (60.f / mod->getSettingValue<float>("bpm")) * 2.f);
     m_hasTappedThisGamemode = false;
     m_isClickingLastFrame = false;
@@ -702,6 +701,16 @@ void LayoutGeneratorLayer::placeFish(PlayerData *pd, const PoolObject *fish, boo
                             pd->player->flipGravity(!pd->isUpsideDown(), true);
                         pd->player->pushButton(PlayerButton::Jump);
                     }
+                }
+            }
+
+            // enable preview for speed portals
+            if (fish->tags & PoolTag::SPEED)
+            {
+                if (auto effectObj = typeinfo_cast<EffectGameObject *>(primaryObj))
+                {
+                    effectObj->m_shouldPreview = true;
+                    editor->tryUpdateSpeedObject(effectObj, false);
                 }
             }
 
