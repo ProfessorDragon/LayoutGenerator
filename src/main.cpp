@@ -44,7 +44,7 @@ class $modify(MyEditorUI, EditorUI)
 		if (!EditorUI::init(editorLayer))
 			return false;
 
-		auto buildSprite = CircleButtonSprite::createWithSpriteFrameName("button.png"_spr, 1.2f, CircleBaseColor::Blue);
+		auto buildSprite = ButtonSprite::createWithSpriteFrameName("button.png"_spr);
 		buildSprite->setScale(0.83f);
 		auto buildButton = CCMenuItemSpriteExtra::create(
 			buildSprite,
@@ -52,7 +52,9 @@ class $modify(MyEditorUI, EditorUI)
 			menu_selector(LayoutGeneratorLayer::onBuildButton));
 		buildButton->setID("build-button"_spr);
 
-		auto settingsSprite = CCSprite::createWithSpriteFrameName("GJ_BPMOnBtn_001.png");
+		// @geode-ignore(unknown-resource)
+		auto settingsSprite = CircleButtonSprite::createWithSpriteFrameName("geode.loader/settings.png", 1.f, CircleBaseColor::DarkAqua);
+		settingsSprite->setScale(0.83f);
 		auto settingsButton = CCMenuItemSpriteExtra::create(
 			settingsSprite,
 			getBuilder(),

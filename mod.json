@@ -28,6 +28,60 @@
 			]
 		}
 	},
+	"settings": {
+		"title-general": {
+			"name": "General",
+			"type": "title"
+		},
+		"bpm": {
+			"name": "BPM",
+			"type": "float",
+			"default": 128.0,
+			"min": 1.0,
+			"max": 3600.0,
+			"control": {
+				"arrows": true,
+				"arrow-step": 1.0,
+				"slider": false
+			}
+		},
+		"use-player-clicks": {
+			"name": "Use player clicks",
+			"description": "If enabled, the gameplay will form around your clicks. If not, clicks will be inserted at random.",
+			"type": "bool",
+			"default": false
+		},
+		"make-jump-indicators": {
+			"name": "Make jump indicators",
+			"type": "bool",
+			"default": true
+		},
+		"make-debug-trail": {
+			"name": "Make debug trail",
+			"description": "Leaves an object trail behind the player while generating. An X indicates the jump button is pressed.",
+			"type": "bool",
+			"default": false
+		},
+		"title-tags": {
+			"name": "What to spawn",
+			"type": "title"
+		},
+		"tag-gamemode": {
+			"name": "Gamemode portals",
+			"type": "bool",
+			"default": true
+		},
+		"tag-speed": {
+			"name": "Speed portals",
+			"type": "bool",
+			"default": true
+		},
+		"tag-size": {
+			"name": "Size portals",
+			"type": "bool",
+			"default": true
+		}
+	},
 	"tags": [
 		"editor",
 		"utility",

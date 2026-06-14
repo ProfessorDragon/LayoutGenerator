@@ -1,15 +1,8 @@
 #include "LayoutGeneratorLayer.hpp"
+#include <Geode/ui/GeodeUI.hpp>
 #include "../GameObjectPool/GameObjectPool.hpp"
 #include "../PlayerData/PlayerData.hpp"
 #include "../PoolObject/PoolObject.hpp"
-#include "../Settings/Settings.hpp"
-#include "../Settings/SettingsPopup.hpp"
-
-Settings *getSettings()
-{
-    static Settings settings;
-    return &settings;
-}
 
 LayoutGeneratorLayer *LayoutGeneratorLayer::create()
 {
@@ -62,12 +55,15 @@ bool LayoutGeneratorLayer::init()
 
 void LayoutGeneratorLayer::reset()
 {
+    auto mod = Mod::get();
+    const float extraSongOffset = 0.133f; // offset for better sync - experimental
+
     m_isBuilding = true;
     m_boundsCeil = 1300.f;
     m_boundsFloor = 90.f;
     m_canPlaceNextFrame = true;
-    m_elapsedTime = LevelEditorLayer::get()->m_levelSettings->m_songOffset + getSettings()->getExtraSongOffset();
-    m_halfBeatCount = 0;
+    m_elapsedTime = LevelEditorLayer::get()->m_levelSettings->m_songOffset + extraSongOffset;
+    m_halfBeatCount = (int)(m_elapsedTime / (60.f / mod->getSettingValue<float>("bpm")) * 2.f);
     m_hasTappedThisGamemode = false;
     m_isClickingLastFrame = false;
     m_lastGamemodePortalPos = CCPoint{0.f, m_boundsFloor};
@@ -106,6 +102,7 @@ void LayoutGeneratorLayer::update(float dt)
         return;
 
     // playerdata
+    auto mod = Mod::get();
     auto editor = LevelEditorLayer::get();
     PlayerData *pd = new PlayerData();
     pd->player = editor->m_player1;
@@ -146,7 +143,7 @@ void LayoutGeneratorLayer::update(float dt)
                 spiderFillTrail.state |= PoolState::AIRBORNE;
             }
             m_playerTrail.push_back(spiderFillTrail);
-            if (getSettings()->getMakeDebugTrail())
+            if (mod->getSettingValue<bool>("make-debug-trail"))
                 placeDebugTrailClicking(trailPos, pd->isClicking());
         }
     }
@@ -158,7 +155,8 @@ void LayoutGeneratorLayer::update(float dt)
         m_boundsCeil,
         m_boundsFloor});
 
-    bool useRandomClicks = getSettings()->getUseRandomClicks();
+    bool usePlayerClicks = mod->getSettingValue<bool>("use-player-clicks");
+    bool useRandomClicks = !usePlayerClicks;
 
     // update gamemode bounds
     if (pd->gamemode != m_lastPlayerGamemode)
@@ -188,7 +186,7 @@ void LayoutGeneratorLayer::update(float dt)
     }
 
     // place object on beat (spb = seconds per beat)
-    float spb = 60.f / getSettings()->getBpm();
+    float spb = 60.f / mod->getSettingValue<float>("bpm");
     bool onBeat = false;
     bool onHalfBeat = false;
     if ((int)(m_elapsedTime / spb * 2.f) > m_halfBeatCount)
@@ -203,7 +201,7 @@ void LayoutGeneratorLayer::update(float dt)
     int requireTap = 0;
     if (m_placeAgainTimer >= 0)
         m_placeAgainTimer--;
-    if (!useRandomClicks)
+    if (usePlayerClicks)
     {
         if (pd->isClicking() && !pd->player->m_isDashing)
         {
@@ -455,7 +453,7 @@ void LayoutGeneratorLayer::update(float dt)
     }
 
     // make debug trail
-    if (getSettings()->getMakeDebugTrail())
+    if (mod->getSettingValue<bool>("make-debug-trail"))
     {
         placeDebugTrailClicking(pd->pos, pd->isClicking());
         if (fish)
@@ -463,14 +461,14 @@ void LayoutGeneratorLayer::update(float dt)
     }
 
     // jump indicators
-    if (getSettings()->getMakeJumpIndicators())
+    if (mod->getSettingValue<bool>("make-jump-indicators"))
     {
         if (pd->state & PoolState::NOT_FLYING)
         {
             // consecutive jumps NEVER REGISTER THE PLAYER AS GROUNDED!!!
             // it's mostly fine but sometimes counts jump pads as jumps
             // (absolutely miserable workaround)
-            if (pd->isClicking() && (m_isClickingLastFrame || !useRandomClicks) && trailLastFrame && trailLastFrame->state & PoolState::GROUNDED && trailLastFrame->pos.y != pd->pos.y)
+            if (pd->isClicking() && (m_isClickingLastFrame || usePlayerClicks) && trailLastFrame && trailLastFrame->state & PoolState::GROUNDED && trailLastFrame->pos.y != pd->pos.y)
                 placeJumpIndicator(trailLastFrame->pos, trailLastFrame->state & PoolState::GRAVITY_REVERSE, false);
         }
         else if (pd->state & PoolState::TAP_FLYING)
@@ -492,6 +490,14 @@ const PoolObject *LayoutGeneratorLayer::fishLegally(PlayerData *pd, int excludeT
     // auto followIndex = player->m_followRelated + followFloats.size();
     // auto followAWhileAgo = followFloats[(followIndex - 18) % followFloats.size()];
 
+    auto mod = Mod::get();
+    if (!mod->getSettingValue<bool>("tag-gamemode"))
+        excludeTags |= PoolTag::GAMEMODE;
+    if (!mod->getSettingValue<bool>("tag-speed"))
+        excludeTags |= PoolTag::SPEED;
+    if (!mod->getSettingValue<bool>("tag-size"))
+        excludeTags |= PoolTag::SIZE_;
+
     bool isBlind = false;
     if (m_playerTrail.size() > 18)
         isBlind = abs(pd->pos.y - m_playerTrail[m_playerTrail.size() - 18].pos.y) > 130.f;
@@ -500,7 +506,7 @@ const PoolObject *LayoutGeneratorLayer::fishLegally(PlayerData *pd, int excludeT
         [&](const PoolObject *fish)
         {
             // tag blacklist
-            if (fish->tags & excludeTags || fish->tags & getSettings()->getExcludeTags())
+            if (fish->tags & excludeTags)
                 return 0.f;
 
             // require tap
@@ -595,6 +601,7 @@ void LayoutGeneratorLayer::placeFish(PlayerData *pd, const PoolObject *fish, boo
 {
     log::info("{} {}", m_fishId, fish->name);
 
+    auto mod = Mod::get();
     auto editor = LevelEditorLayer::get();
     auto playerRect = pd->player->getObjectRect();
 
@@ -689,7 +696,7 @@ void LayoutGeneratorLayer::placeFish(PlayerData *pd, const PoolObject *fish, boo
                 {
                     // yep this is all necessary
                     pd->player->addToTouchedRings(ringObj);
-                    if (getSettings()->getUsePlayerClicks() && pd->state & PoolState::FLYING && fish->tags & PoolTag::RING_LATE)
+                    if (mod->getSettingValue<bool>("use-player-clicks") && pd->state & PoolState::FLYING && fish->tags & PoolTag::RING_LATE)
                     {
                         if (pd->state & PoolState::GAMEMODE_SWING)
                             pd->player->flipGravity(!pd->isUpsideDown(), true);
@@ -709,7 +716,7 @@ void LayoutGeneratorLayer::placeFish(PlayerData *pd, const PoolObject *fish, boo
         fish->tags & PoolTag::SPIDER
         // if usePlayerClicks is true, it won't work. the player would already have teleported
         // before it has the chance to place the block.
-        && (getSettings()->getUseRandomClicks() || !(fish->tags & PoolTag::BLOCK))
+        && (!mod->getSettingValue<bool>("use-player-clicks") || !(fish->tags & PoolTag::BLOCK))
         // ensure the fish was actually placed
         && (fish->objectId < 0 || shouldPlace))
     {
@@ -750,7 +757,7 @@ void LayoutGeneratorLayer::placeFish(PlayerData *pd, const PoolObject *fish, boo
     }
 
     // place label
-    if (getSettings()->getMakeDebugTrail() && !useLastY)
+    if (mod->getSettingValue<bool>("make-debug-trail") && !useLastY)
     {
         placeLabel(
             fish->name,
@@ -1141,8 +1148,7 @@ void LayoutGeneratorLayer::onSettingsButton(CCObject *)
     //     }
     // }
 
-    auto popup = SettingsPopup::create(getSettings());
-    popup->show();
+    geode::openSettingsPopup(Mod::get(), false);
 }
 
 void LayoutGeneratorLayer::playtestStopped()
