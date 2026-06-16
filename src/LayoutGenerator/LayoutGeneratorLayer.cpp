@@ -142,7 +142,7 @@ void LayoutGeneratorLayer::update(float dt)
                 spiderFillTrail.state |= PoolState::AIRBORNE;
             }
             m_playerTrail.push_back(spiderFillTrail);
-            if (mod->getSettingValue<bool>("make-debug-trail"))
+            if (mod->getSettingValue<bool>("debug-trail"))
                 placeDebugTrailClicking(trailPos, pd->isClicking());
         }
     }
@@ -353,32 +353,50 @@ void LayoutGeneratorLayer::update(float dt)
     }
 
     // spikes v2
-    // const float evilSpikeMargin = trail.playerSize * 15.f + 7.f;
     const float scanBehindPlayer = 60.f;
+    float spikeMargin = mod->getSettingValue<float>("spike-margin");
     float yMin = FLT_MAX;
     float yMax = -FLT_MAX;
     PlayerTrailData leftTrail{};
     PlayerTrailData midTrail{};
+    float midMaxShrink = 0.0;
     float spikeX = pd->pos.x - scanBehindPlayer / 2;
     for (auto it = m_playerTrail.rbegin(); it != m_playerTrail.rend(); ++it)
     {
         auto trail = *it;
-        leftTrail = trail;
-        if (trail.pos.x > spikeX)
-            midTrail = trail;
         if (trail.pos.x < pd->pos.x - scanBehindPlayer)
             break;
-        float spikeMargin;
+
+        float shrink = 0.f;
         if (trail.state & PoolState::GAMEMODE_WAVE)
-            spikeMargin = trail.state & PoolState::SIZE_MINI ? 55.f : 45.f;
+            shrink = trail.state & PoolState::SIZE_MINI ? 15.f : 25.f;
         else if (trail.state & PoolState::GAMEMODE_SHIP)
-            spikeMargin = trail.state & PoolState::SIZE_MINI ? 55.f : 60.f;
-        else
-            spikeMargin = 70.f;
-        yMin = std::min(yMin, trail.pos.y - spikeMargin);
-        yMax = std::max(yMax, trail.pos.y + spikeMargin);
+            shrink = 10.f;
+        else if (trail.state & PoolState::GAMEMODE_UFO && trail.state & PoolState::SIZE_MINI)
+            shrink = 10.f;
+
+        float evilSpikeMargin = (trail.state & PoolState::SIZE_MINI ? .6f : 1.f) * (trail.state & PoolState::GAMEMODE_WAVE ? .8f : 1.f) * 15.f + 8.f;
+        float shrunkSpikeMargin = std::max(evilSpikeMargin, spikeMargin - shrink);
+        leftTrail = trail;
+        if (trail.pos.x > spikeX)
+        {
+            midTrail = trail;
+            midMaxShrink = shrunkSpikeMargin - evilSpikeMargin;
+        }
+
+        yMin = std::min(yMin, trail.pos.y - shrunkSpikeMargin);
+        yMax = std::max(yMax, trail.pos.y + shrunkSpikeMargin);
     }
-    auto playerRect = pd->player->getObjectRect();
+
+    if (!(midTrail.state & PoolState::GAMEMODE_WAVE))
+    {
+        float jumpShrink = std::min(midMaxShrink, midTrail.state & PoolState::SIZE_MINI ? 30.f : 15.f);
+        if (leftTrail.pos.y < midTrail.pos.y - 1.f && pd->pos.y < midTrail.pos.y - 1.f && midTrail.state & PoolState::GRAVITY_NORMAL)
+            yMin += jumpShrink;
+        if (leftTrail.pos.y > midTrail.pos.y + 1.f && pd->pos.y > midTrail.pos.y + 1.f && midTrail.state & PoolState::GRAVITY_REVERSE)
+            yMax -= jumpShrink;
+    }
+
     placeSpikeBoundary(
         CCPoint{spikeX, yMin},
         CCPoint{spikeX, yMax},
@@ -390,7 +408,7 @@ void LayoutGeneratorLayer::update(float dt)
              // which is approximately the same width as a spike (6). except for wave, which is not handled.
              // it does not change in mini size.
              ? 6.f
-             : playerRect.size.width) +
+             : pd->player->getObjectRect().size.width) +
             // add one spike width minus xv
             6.f - pd->vel.x);
 
@@ -422,7 +440,7 @@ void LayoutGeneratorLayer::update(float dt)
             else if (pd->state & PoolState::GAMEMODE_WAVE)
                 m_shouldTapTimer = 3;
 
-            bool push = pd->pos.y * pd->getSign() <= mid * pd->getSign();
+            bool push = pd->pos.y * pd->getSign() < mid * pd->getSign();
 
             auto dist = abs(pd->pos.y - mid);
             if (dist < 60 && utils::random::chance((1 - dist / 60.f) * .5f))
@@ -470,7 +488,7 @@ void LayoutGeneratorLayer::update(float dt)
     }
 
     // make debug trail
-    if (mod->getSettingValue<bool>("make-debug-trail"))
+    if (mod->getSettingValue<bool>("debug-trail"))
     {
         placeDebugTrailClicking(pd->pos, pd->isClicking());
         if (fish)
@@ -478,7 +496,7 @@ void LayoutGeneratorLayer::update(float dt)
     }
 
     // jump indicators
-    if (mod->getSettingValue<bool>("make-jump-indicators"))
+    if (mod->getSettingValue<bool>("jump-indicators"))
     {
         if (pd->state & PoolState::NOT_FLYING)
         {
@@ -607,24 +625,34 @@ const PoolObject *LayoutGeneratorLayer::fishLegally(PlayerData *pd, int excludeT
                 // maximum distance is 135
                 auto dist = abs(pd->pos.y - mid);
 
-                // above middle, relative to gravity
-                if (pd->pos.y * pd->getSign() > mid * pd->getSign())
+                // below middle, relative to gravity
+                if (pd->pos.y * pd->getSign() < mid * pd->getSign())
                 {
-                    if (
-                        // jump and not gravity
-                        (fish->tags & PoolTag::JUMP && !(fish->tags & PoolTag::GRAVITY))
-                        // fall and gravity
-                        || (fish->tags & PoolTag::FALL && fish->tags & PoolTag::GRAVITY))
-                        weight *= 1 - dist / 30.f;
+                    if (pd->state & PoolState::HOLD_FLYING)
+                    {
+                        if (
+                            // fall and not gravity
+                            (fish->tags & PoolTag::FALL && !(fish->tags & PoolTag::GRAVITY))
+                            // jump and gravity
+                            || (fish->tags & PoolTag::JUMP && fish->tags & PoolTag::GRAVITY))
+                            weight *= 1 - dist / 30.f;
+                    }
+                    else if (fish->tags & PoolTag::FALL)
+                        weight *= 1 - dist / 125.f;
                 }
                 else
                 {
-                    if (
-                        // fall and not gravity
-                        (fish->tags & PoolTag::FALL && !(fish->tags & PoolTag::GRAVITY))
-                        // jump and gravity
-                        || (fish->tags & PoolTag::JUMP && fish->tags & PoolTag::GRAVITY))
-                        weight *= 1 - dist / 30.f;
+                    if (pd->state & PoolState::HOLD_FLYING)
+                    {
+                        if (
+                            // jump and not gravity
+                            (fish->tags & PoolTag::JUMP && !(fish->tags & PoolTag::GRAVITY))
+                            // fall and gravity
+                            || (fish->tags & PoolTag::FALL && fish->tags & PoolTag::GRAVITY))
+                            weight *= 1 - dist / 30.f;
+                    }
+                    else if (fish->tags & PoolTag::JUMP)
+                        weight *= 1 - dist / 125.f;
                 }
             }
 
@@ -802,7 +830,7 @@ void LayoutGeneratorLayer::placeFish(PlayerData *pd, const PoolObject *fish, boo
     }
 
     // place label
-    if (mod->getSettingValue<bool>("make-debug-trail") && !useLastY)
+    if (mod->getSettingValue<bool>("debug-trail") && !useLastY)
     {
         placeLabel(
             fish->name,
@@ -891,9 +919,6 @@ void LayoutGeneratorLayer::placeSpikeBoundary(
     CCPoint rightPos,
     float dedupDistance)
 {
-    auto midPos = midTrail.pos;
-    auto midState = midTrail.state;
-
     // wave (slopes) (unused)
     // if (midState & PoolState::GAMEMODE_WAVE)
     // {
@@ -922,14 +947,6 @@ void LayoutGeneratorLayer::placeSpikeBoundary(
     //             topSpike->setRotation(-90.f);
     //     }
     // }
-
-    if (!(midState & PoolState::GAMEMODE_WAVE))
-    {
-        if (leftPos.y < midPos.y - 1.f && rightPos.y < midPos.y - 1.f && midState & PoolState::GRAVITY_NORMAL)
-            spikeBottomPos.y += midState & PoolState::SIZE_MINI ? 30.f : 15.f;
-        if (leftPos.y > midPos.y + 1.f && rightPos.y > midPos.y + 1.f && midState & PoolState::GRAVITY_REVERSE)
-            spikeTopPos.y -= midState & PoolState::SIZE_MINI ? 30.f : 15.f;
-    }
 
     const float verticalFillDist = 30.f;
 

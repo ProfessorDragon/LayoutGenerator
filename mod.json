@@ -46,19 +46,32 @@
 				"slider": false
 			}
 		},
+		"spike-margin": {
+			"name": "Spike margin",
+			"description": "Controls how close the spikes are to the player. Lower values make the gameplay less forgiving.",
+			"type": "float",
+			"default": 70.0,
+			"min": 0.0,
+			"max": 150.0,
+			"control": {
+				"arrows": true,
+				"arrow-step": 10.0,
+				"slider": false
+			}
+		},
 		"use-player-clicks": {
 			"name": "Use player clicks",
 			"description": "If enabled, the gameplay will form around your clicks. If not, clicks will be inserted at random.",
 			"type": "bool",
 			"default": false
 		},
-		"make-jump-indicators": {
+		"jump-indicators": {
 			"name": "Make jump indicators",
 			"type": "bool",
 			"default": true
 		},
-		"make-debug-trail": {
-			"name": "Make debug trail",
+		"debug-trail": {
+			"name": "Debug trail",
 			"description": "Leaves an object trail behind the player while generating. An X indicates the jump button is pressed.",
 			"type": "bool",
 			"default": false

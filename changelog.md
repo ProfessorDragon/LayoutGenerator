@@ -1,6 +1,7 @@
 # 1.2.0
 
 - Improved ship and wave gameplay
+- Added setting for spike margin
 - Added settings for jump pad and ring generation
 - Fixed crash when placing jump indicators in cube/ball/robot/spider
 
