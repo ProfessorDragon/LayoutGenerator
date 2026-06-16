@@ -111,11 +111,12 @@ enum PoolTap
 {
     NO = 1 << 0,
     TAP = 1 << 1,
-    TAP_DELAYED = 1 << 2, // tap, but a bit late
-    HOLD = 1 << 3,        // hold until the next object is placed
-    HOLD_RANDOM = 1 << 4, // hold for a random duration (robot)
-    ANY = 1 << 5,         // doesn't matter if you tap, the player can't do anything
-    RANDOM = 1 << 6,      // mash randomly
+    TAP_DELAYED = 1 << 2,    // tap, but a bit late
+    HOLD = 1 << 3,           // hold until the next object is placed
+    HOLD_RANDOM = 1 << 4,    // hold for a random duration (robot)
+    ANY = 1 << 5,            // doesn't matter if you tap, the player can't do anything
+    RANDOM = 1 << 6,         // mash randomly
+    TOWARDS_CENTER = 1 << 7, // aim for middle of bounds
 
     TAP_OR_HOLD = TAP | TAP_DELAYED | HOLD | HOLD_RANDOM,
 };

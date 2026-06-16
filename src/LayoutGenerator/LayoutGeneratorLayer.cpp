@@ -123,18 +123,18 @@ void LayoutGeneratorLayer::update(float dt)
         return;
 
     // playertraildata
-    PlayerTrailData *trailLastFrame = nullptr;
+    PlayerTrailData trailLastFrame{};
     if (!m_playerTrail.empty())
     {
-        trailLastFrame = &m_playerTrail.back();
-        CCPoint trailPos = trailLastFrame->pos;
+        trailLastFrame = m_playerTrail.back();
+        CCPoint trailPos(trailLastFrame.pos);
 
         // fill in the gaps when a spider pad/ring is hit
         const float spiderFillDistance = 30.f;
         while (abs(trailPos.y - pd->pos.y) > spiderFillDistance)
         {
             trailPos.y += spiderFillDistance * (trailPos.y > pd->pos.y ? -1 : 1);
-            PlayerTrailData spiderFillTrail(*trailLastFrame);
+            PlayerTrailData spiderFillTrail(trailLastFrame);
             spiderFillTrail.pos = trailPos;
             if (spiderFillTrail.state & PoolState::GROUNDED)
             {
@@ -295,11 +295,7 @@ void LayoutGeneratorLayer::update(float dt)
                 m_shouldTap = PoolTap::TAP;
                 m_shouldTapTimer = 3;
             }
-            else if (fish->tap == PoolTap::HOLD || fish->tap == PoolTap::HOLD_RANDOM)
-            {
-                m_tapBalance += .5f;
-            }
-            else if (fish->tap == PoolTap::RANDOM)
+            else if (fish->tap & (PoolTap::HOLD | PoolTap::HOLD_RANDOM | PoolTap::RANDOM))
             {
                 m_tapBalance += .5f;
             }
@@ -309,7 +305,8 @@ void LayoutGeneratorLayer::update(float dt)
                 if (pd->gamemode & PoolState::NOT_FLYING)
                     m_shouldTap = PoolTap::NO;
                 else if (pd->gamemode & PoolState::HOLD_FLYING && utils::random::chance(0.5))
-                    m_shouldTap = utils::random::chance(0.5) ? PoolTap::NO : PoolTap::HOLD;
+                    m_shouldTap = pd->isClicking() ? PoolTap::NO : PoolTap::HOLD;
+
                 // place another object soon, because we can
                 // maybe a fish->canPlaceAgain field would be useful in the future? or fish->placeAgainChance?
                 if (utils::random::chance(0.5))
@@ -373,9 +370,9 @@ void LayoutGeneratorLayer::update(float dt)
             break;
         float spikeMargin;
         if (trail.state & PoolState::GAMEMODE_WAVE)
-            spikeMargin = 45.f + (trail.state & PoolState::SIZE_MINI ? 10.f : 0.f);
+            spikeMargin = trail.state & PoolState::SIZE_MINI ? 55.f : 45.f;
         else if (trail.state & PoolState::GAMEMODE_SHIP)
-            spikeMargin = 65.f - (trail.state & PoolState::SIZE_MINI ? 10.f : 0.f);
+            spikeMargin = trail.state & PoolState::SIZE_MINI ? 55.f : 60.f;
         else
             spikeMargin = 70.f;
         yMin = std::min(yMin, trail.pos.y - spikeMargin);
@@ -409,12 +406,33 @@ void LayoutGeneratorLayer::update(float dt)
             // 50% chance to toggle the jump button, every couple of frames
             if (utils::random::chance(0.5))
             {
-                m_shouldTapTimer = utils::random::generate<int>(2, 5);
+                m_shouldTapTimer = utils::random::generate<int>(2, 6);
                 if (pd->isClicking())
                     pd->player->releaseButton(PlayerButton::Jump);
                 else
                     pd->player->pushButton(PlayerButton::Jump);
             }
+        }
+        else if (m_shouldTap == PoolTap::TOWARDS_CENTER)
+        {
+            // aim for middle of bounds
+            auto mid = (m_boundsFloor + m_boundsCeil) / 2.f;
+            if (pd->state & PoolState::GAMEMODE_SHIP)
+                mid -= pd->vel.y * 10.f;
+            else if (pd->state & PoolState::GAMEMODE_WAVE)
+                m_shouldTapTimer = 3;
+
+            bool push = pd->pos.y * pd->getSign() <= mid * pd->getSign();
+
+            auto dist = abs(pd->pos.y - mid);
+            if (dist < 60 && utils::random::chance((1 - dist / 60.f) * .5f))
+                push = !push;
+
+            if (push != pd->isClicking())
+                if (push)
+                    pd->player->pushButton(PlayerButton::Jump);
+                else
+                    pd->player->releaseButton(PlayerButton::Jump);
         }
         else if ((bool)(m_shouldTap & PoolTap::TAP_OR_HOLD) != pd->isClicking())
         {
@@ -467,8 +485,8 @@ void LayoutGeneratorLayer::update(float dt)
             // consecutive jumps NEVER REGISTER THE PLAYER AS GROUNDED!!!
             // it's mostly fine but sometimes counts jump pads as jumps
             // (absolutely miserable workaround)
-            if (pd->isClicking() && (m_isClickingLastFrame || usePlayerClicks) && trailLastFrame && trailLastFrame->state & PoolState::GROUNDED && trailLastFrame->pos.y != pd->pos.y)
-                placeJumpIndicator(trailLastFrame->pos, trailLastFrame->state & PoolState::GRAVITY_REVERSE, false);
+            if (pd->isClicking() && (m_isClickingLastFrame || usePlayerClicks) && trailLastFrame.state & PoolState::GROUNDED && trailLastFrame.pos.y != pd->pos.y)
+                placeJumpIndicator(trailLastFrame.pos, trailLastFrame.state & PoolState::GRAVITY_REVERSE, false);
         }
         else if (pd->state & PoolState::TAP_FLYING)
         {
@@ -490,12 +508,16 @@ const PoolObject *LayoutGeneratorLayer::fishLegally(PlayerData *pd, int excludeT
     // auto followAWhileAgo = followFloats[(followIndex - 18) % followFloats.size()];
 
     auto mod = Mod::get();
-    if (!mod->getSettingValue<bool>("tag-gamemode"))
-        excludeTags |= PoolTag::GAMEMODE;
-    if (!mod->getSettingValue<bool>("tag-speed"))
-        excludeTags |= PoolTag::SPEED;
+    if (!mod->getSettingValue<bool>("tag-pad"))
+        excludeTags |= PoolTag::PAD;
+    if (!mod->getSettingValue<bool>("tag-ring"))
+        excludeTags |= PoolTag::RING;
     if (!mod->getSettingValue<bool>("tag-size"))
         excludeTags |= PoolTag::SIZE_;
+    if (!mod->getSettingValue<bool>("tag-speed"))
+        excludeTags |= PoolTag::SPEED;
+    if (!mod->getSettingValue<bool>("tag-gamemode"))
+        excludeTags |= PoolTag::GAMEMODE;
 
     bool isBlind = false;
     if (m_playerTrail.size() > 18)
@@ -574,22 +596,36 @@ const PoolObject *LayoutGeneratorLayer::fishLegally(PlayerData *pd, int excludeT
                         weight *= 10.f;
                 }
             }
+
             // aim for middle of bounds
             else
             {
                 auto mid = (m_boundsFloor + m_boundsCeil) / 2.f;
+                if (pd->state & PoolState::GAMEMODE_SHIP)
+                    mid -= pd->vel.y * 10.f;
+
+                // maximum distance is 135
                 auto dist = abs(pd->pos.y - mid);
+
+                // above middle, relative to gravity
                 if (pd->pos.y * pd->getSign() > mid * pd->getSign())
                 {
-                    if (fish->tags & PoolTag::JUMP)
-                        weight *= 1 - dist / 125.f;
+                    if (
+                        // jump and not gravity
+                        (fish->tags & PoolTag::JUMP && !(fish->tags & PoolTag::GRAVITY))
+                        // fall and gravity
+                        || (fish->tags & PoolTag::FALL && fish->tags & PoolTag::GRAVITY))
+                        weight *= 1 - dist / 30.f;
                 }
                 else
                 {
-                    if (fish->tags & PoolTag::FALL)
-                        weight *= 1 - dist / 125.f;
+                    if (
+                        // fall and not gravity
+                        (fish->tags & PoolTag::FALL && !(fish->tags & PoolTag::GRAVITY))
+                        // jump and gravity
+                        || (fish->tags & PoolTag::JUMP && fish->tags & PoolTag::GRAVITY))
+                        weight *= 1 - dist / 30.f;
                 }
-                // dividing by 125 is arbitrary, but somewhat based on the maximum distance of 135
             }
 
             return weight;
@@ -887,10 +923,15 @@ void LayoutGeneratorLayer::placeSpikeBoundary(
     //     }
     // }
 
-    if (leftPos.y < midPos.y - 1.f && rightPos.y < midPos.y - 1.f && midState & PoolState::GRAVITY_NORMAL)
-        spikeBottomPos.y += midState & PoolState::SIZE_MINI ? 30.f : 15.f;
-    if (leftPos.y > midPos.y + 1.f && rightPos.y > midPos.y + 1.f && midState & PoolState::GRAVITY_REVERSE)
-        spikeTopPos.y -= midState & PoolState::SIZE_MINI ? 30.f : 15.f;
+    if (!(midState & PoolState::GAMEMODE_WAVE))
+    {
+        if (leftPos.y < midPos.y - 1.f && rightPos.y < midPos.y - 1.f && midState & PoolState::GRAVITY_NORMAL)
+            spikeBottomPos.y += midState & PoolState::SIZE_MINI ? 30.f : 15.f;
+        if (leftPos.y > midPos.y + 1.f && rightPos.y > midPos.y + 1.f && midState & PoolState::GRAVITY_REVERSE)
+            spikeTopPos.y -= midState & PoolState::SIZE_MINI ? 30.f : 15.f;
+    }
+
+    const float verticalFillDist = 30.f;
 
     // bottom
     if (getObjectNearPoint(spikeBottomPos, dedupDistance, ObjectId::SPIKE) == nullptr)
@@ -899,14 +940,14 @@ void LayoutGeneratorLayer::placeSpikeBoundary(
         if (m_lastSpikeBottomPos.x > 0)
         {
             CCPoint spikeBottomPos2 = spikeBottomPos;
-            while (spikeBottomPos2.y > m_lastSpikeBottomPos.y + 30.f)
+            while (spikeBottomPos2.y > m_lastSpikeBottomPos.y + verticalFillDist)
             {
-                spikeBottomPos2.y -= 30.f;
+                spikeBottomPos2.y -= verticalFillDist;
                 placeSpikeInBounds(spikeBottomPos2, midTrail, false);
             }
-            while (spikeBottomPos.y < m_lastSpikeBottomPos.y - 30.f)
+            while (spikeBottomPos.y < m_lastSpikeBottomPos.y - verticalFillDist)
             {
-                m_lastSpikeBottomPos.y -= 30.f;
+                m_lastSpikeBottomPos.y -= verticalFillDist;
                 placeSpikeInBounds(m_lastSpikeBottomPos, midTrail, false);
             }
         }
@@ -919,15 +960,15 @@ void LayoutGeneratorLayer::placeSpikeBoundary(
         placeSpikeInBounds(spikeTopPos, midTrail, true);
         if (m_lastSpikeTopPos.x > 0)
         {
-            while (spikeTopPos.y > m_lastSpikeTopPos.y + 30.f)
+            while (spikeTopPos.y > m_lastSpikeTopPos.y + verticalFillDist)
             {
-                m_lastSpikeTopPos.y += 30.f;
+                m_lastSpikeTopPos.y += verticalFillDist;
                 placeSpikeInBounds(m_lastSpikeTopPos, midTrail, true);
             }
             CCPoint spikeTopPos2 = spikeTopPos;
-            while (spikeTopPos2.y < m_lastSpikeTopPos.y - 30.f)
+            while (spikeTopPos2.y < m_lastSpikeTopPos.y - verticalFillDist)
             {
-                spikeTopPos2.y += 30.f;
+                spikeTopPos2.y += verticalFillDist;
                 placeSpikeInBounds(spikeTopPos2, midTrail, true);
             }
         }
