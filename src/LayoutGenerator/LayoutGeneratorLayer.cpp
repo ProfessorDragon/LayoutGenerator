@@ -536,6 +536,8 @@ const PoolObject *LayoutGeneratorLayer::fishLegally(PlayerData *pd, int excludeT
         excludeTags |= PoolTag::SPEED;
     if (!mod->getSettingValue<bool>("tag-gamemode"))
         excludeTags |= PoolTag::GAMEMODE;
+    if (!mod->getSettingValue<bool>("tag-experimental"))
+        excludeTags |= PoolTag::EXPERIMENTAL;
 
     bool isBlind = false;
     if (m_playerTrail.size() > 18)
@@ -557,10 +559,6 @@ const PoolObject *LayoutGeneratorLayer::fishLegally(PlayerData *pd, int excludeT
                 return 0.f;
 
             // !! important things to never do !!
-
-            // late rings in cube, ball, robot, spider
-            if (pd->state & PoolState::NOT_FLYING && fish->tags & PoolTag::RING_LATE)
-                return 0.f;
 
             // blind jumps
             if (isBlind && fish->tap & PoolTap::TAP_OR_HOLD)

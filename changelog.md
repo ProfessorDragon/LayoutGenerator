@@ -3,6 +3,7 @@
 - Improved ship and wave gameplay
 - Added setting for spike margin
 - Added settings for jump pad and ring generation
+- Added experimental gameplay objects
 - Fixed crash when placing jump indicators in cube/ball/robot/spider
 
 

@@ -104,6 +104,12 @@
 			"name": "Rings",
 			"type": "bool",
 			"default": true
+		},
+		"tag-experimental": {
+			"name": "Experimental gameplay",
+			"description": "Adds experimental gameplay elements such as late ring timings, jump pads while flying, and green gravity portals.",
+			"type": "bool",
+			"default": false
 		}
 	},
 	"tags": [

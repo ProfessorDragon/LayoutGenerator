@@ -42,13 +42,6 @@ enum PoolTag
     SPIDER = 1 << 13,       // teleports player to ground
     BUFFERED = 1 << 14,     // can only be interacted with when a tap is buffered
     EXPERIMENTAL = 1 << 15, // classified as unconventional gameplay
-
-    // "experimental-gameplay": {
-    //     "name": "Experimental gameplay",
-    //     "description": "Adds experimental gameplay elements such as late ring timings and jump pads while flying.",
-    //     "type": "bool",
-    //     "default": false
-    // },
 };
 
 enum PoolState

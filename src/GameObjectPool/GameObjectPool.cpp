@@ -191,7 +191,8 @@ const std::vector<PoolObject> GameObjectPool::POOL = []()
     pool.push_back(
         PoolObject("hold flying platform hold")
             .withTags(PoolTag::BLOCK)
-            .withShares(2.5f)
+            // this appears a lot more than hold flying platform and i don't know why
+            // .withShares(2.5f)
             .withObjectId(ObjectId::BLOCK)
             .withStates(PoolState::HOLD_FLYING, PoolState::RISING | PoolState::PEAKING, PoolState::SIZE_NORMAL | PoolState::NOT_WAVE)
             .withAlign(PoolAlign::TC, PoolAlign::BC)
@@ -248,6 +249,20 @@ const std::vector<PoolObject> GameObjectPool::POOL = []()
                 .withStates(PoolState::AIRBORNE, PoolState::FALLING)
                 .withAlign(PoolAlign::BC, PoolAlign::TC)
                 .withTap(PoolTap::ANY));
+
+        pool.push_back(
+            PoolObject("pad flying rising")
+                .withPartial(p, PoolTag::EXPERIMENTAL, 2.f)
+                .withStates(PoolState::FLYING, PoolState::NOT_WAVE, PoolState::RISING)
+                .withAlign(PoolAlign::TC, PoolAlign::BC)
+                .withTap(PoolTap::ANY));
+
+        pool.push_back(
+            PoolObject("pad flying falling")
+                .withPartial(p, PoolTag::EXPERIMENTAL, 2.f)
+                .withStates(PoolState::FLYING, PoolState::NOT_WAVE, PoolState::FALLING)
+                .withAlign(PoolAlign::BC, PoolAlign::TC)
+                .withTap(PoolTap::ANY));
     }
 
     // rings
@@ -265,7 +280,7 @@ const std::vector<PoolObject> GameObjectPool::POOL = []()
     {
         pool.push_back(
             PoolObject("jump ring grounded")
-                .withPartial(p, PoolTag::RING_LATE)
+                .withPartial(p, PoolTag::RING_LATE | PoolTag::EXPERIMENTAL)
                 .withStates(PoolState::GROUNDED)
                 .withTap(PoolTap::TAP));
 
@@ -278,7 +293,7 @@ const std::vector<PoolObject> GameObjectPool::POOL = []()
 
         pool.push_back(
             PoolObject("jump ring falling late")
-                .withPartial(p, PoolTag::RING_LATE)
+                .withPartial(p, PoolTag::RING_LATE | PoolTag::EXPERIMENTAL)
                 .withStates(PoolState::AIRBORNE, PoolState::FALLING | PoolState::PEAKING)
                 .withTap(PoolTap::TAP));
 
@@ -293,11 +308,33 @@ const std::vector<PoolObject> GameObjectPool::POOL = []()
             pool.back().states.push_back(PoolState::FALLING);
 
         pool.push_back(
+            PoolObject("jump ring hold flying experimental")
+                .withPartial(p, PoolTag::RING_LATE, .5f)
+                .withStates(PoolState::HOLD_FLYING, PoolState::NOT_WAVE)
+                .withTap(p.tags & PoolTag::JUMP && p.tags & PoolTag::GRAVITY ? PoolTap::TAP : PoolTap::HOLD));
+
+        pool.push_back(
             PoolObject("jump ring tap flying")
                 .withPartial(p, PoolTag::RING_LATE)
                 .withStates(PoolState::TAP_FLYING)
                 .withTap(PoolTap::TAP));
     }
+
+    pool.push_back(
+        PoolObject("blue ring wave")
+            .withTags(PoolTag::JUMP | PoolTag::GRAVITY | PoolTag::RING_LATE | PoolTag::EXPERIMENTAL)
+            .withShares(verySmallShares)
+            .withObjectId(84)
+            .withStates(PoolState::GAMEMODE_WAVE)
+            .withTap(PoolTap::TAP));
+
+    pool.push_back(
+        PoolObject("blue ring wave hold")
+            .withTags(PoolTag::FALL | PoolTag::GRAVITY | PoolTag::RING_LATE | PoolTag::EXPERIMENTAL)
+            .withShares(verySmallShares)
+            .withObjectId(84)
+            .withStates(PoolState::GAMEMODE_WAVE)
+            .withTap(PoolTap::HOLD));
 
     // black rings
     pool.push_back(
@@ -311,7 +348,7 @@ const std::vector<PoolObject> GameObjectPool::POOL = []()
 
     pool.push_back(
         PoolObject("black ring late")
-            .withTags(PoolTag::RING_LATE | PoolTag::FALL)
+            .withTags(PoolTag::RING_LATE | PoolTag::FALL | PoolTag::EXPERIMENTAL)
             .withShares(verySmallShares)
             .withObjectId(1330)
             .withStates(PoolState::AIRBORNE, PoolState::RISING | PoolState::PEAKING)
@@ -384,7 +421,7 @@ const std::vector<PoolObject> GameObjectPool::POOL = []()
 
         pool.push_back(
             PoolObject("spider ring late")
-                .withTags(PoolTag::RING_LATE | tags)
+                .withTags(PoolTag::RING_LATE | PoolTag::EXPERIMENTAL | tags)
                 .withShares(verySmallShares)
                 .withObjectId(3004)
                 .withStates(PoolState::AIRBORNE)
@@ -399,59 +436,74 @@ const std::vector<PoolObject> GameObjectPool::POOL = []()
                 .withStates(PoolState::FLYING, PoolState::NOT_WAVE)
                 .withRotation(i * 180.f)
                 .withTap(PoolTap::TAP));
+
+        pool.push_back(
+            PoolObject("spider ring wave")
+                .withTags(PoolTag::RING_LATE | PoolTag::EXPERIMENTAL | tags)
+                .withShares(verySmallShares)
+                .withObjectId(3004)
+                .withStates(PoolState::GAMEMODE_WAVE)
+                .withRotation(i * 180.f)
+                .withTap(PoolTap::TAP));
     }
 
     // dash rings
-    // s block: 1829
     for (auto &p : {
              // green
-             PartialPoolObject{0, 1704},
+             PartialPoolObject{0, 1704, verySmallShares * 2.f},
              // pink
-             PartialPoolObject{PoolTag::GRAVITY, 1751}})
+             PartialPoolObject{PoolTag::GRAVITY, 1751, verySmallShares * 2.f}})
     {
         pool.push_back(
             PoolObject("dash ring falling")
                 .withPartial(p, PoolTag::RING_BUFFERED)
-                .withShares(verySmallShares * 2.f)
                 .withStates(PoolState::AIRBORNE, PoolState::FALLING)
                 .withAlign(PoolAlign::BC, PoolAlign::TC)
                 .withTap(PoolTap::HOLD));
 
         pool.push_back(
             PoolObject("dash ring falling late")
-                .withPartial(p, PoolTag::RING_LATE)
-                .withShares(verySmallShares * 2.f)
+                .withPartial(p, PoolTag::RING_LATE | PoolTag::EXPERIMENTAL)
                 .withStates(PoolState::AIRBORNE, PoolState::FALLING | PoolState::PEAKING)
                 .withTap(PoolTap::HOLD));
 
         pool.push_back(
             PoolObject("dash ring flying")
                 .withPartial(p, PoolTag::RING_LATE)
-                .withShares(verySmallShares * 2.f)
                 // not wave bc it's just not fun
                 // not peaking because atp just fly straight
                 .withStates(PoolState::FLYING, PoolState::NOT_WAVE, PoolState::RISING | PoolState::FALLING)
                 .withTap(PoolTap::HOLD));
+
+        pool.push_back(
+            PoolObject("dash ring wave")
+                .withPartial(p, PoolTag::RING_LATE | PoolTag::EXPERIMENTAL)
+                .withStates(PoolState::GAMEMODE_WAVE)
+                .withTap(PoolTap::HOLD));
     }
 
     // gravity portals
-    for (int i = 0; i < 2; i++)
+    for (int i = 0; i < 3; i++)
     {
+        int tags = PoolTag::PORTAL | PoolTag::GRAVITY;
+        if (i == 2)
+            tags |= PoolTag::EXPERIMENTAL;
+        int objectId = i == 2 ? 2926 : 10 + i;
         int state = i == 0 ? PoolState::GRAVITY_REVERSE : PoolState::GRAVITY_NORMAL;
 
         pool.push_back(
             PoolObject("gravity portal grounded")
-                .withTags(PoolTag::PORTAL | PoolTag::GRAVITY)
-                .withObjectId(10 + i)
+                .withTags(tags)
+                .withObjectId(objectId)
                 .withStates(PoolState::GROUNDED, state)
                 .withAlign(PoolAlign::BR, PoolAlign::BL)
                 .withTap(PoolTap::ANY));
 
         pool.push_back(
             PoolObject("gravity portal falling")
-                .withTags(PoolTag::PORTAL | PoolTag::GRAVITY)
+                .withTags(tags)
                 .withShares(5.f)
-                .withObjectId(10 + i)
+                .withObjectId(objectId)
                 .withStates(PoolState::AIRBORNE, PoolState::FALLING, state)
                 .withAlign(PoolAlign::BC, PoolAlign::TC)
                 .withRotation(90.f)
@@ -459,27 +511,27 @@ const std::vector<PoolObject> GameObjectPool::POOL = []()
 
         pool.push_back(
             PoolObject("gravity portal hold flying")
-                .withTags(PoolTag::PORTAL | PoolTag::GRAVITY)
+                .withTags(tags)
                 .withShares(25.f)
-                .withObjectId(10 + i)
+                .withObjectId(objectId)
                 .withStates(PoolState::HOLD_FLYING, state)
                 .withAlign(PoolAlign::CR, PoolAlign::CL)
                 .withTap(PoolTap::ANY));
 
         pool.push_back(
             PoolObject("gravity portal tap flying")
-                .withTags(PoolTag::PORTAL | PoolTag::GRAVITY)
+                .withTags(tags)
                 .withShares(5.f)
-                .withObjectId(10 + i)
+                .withObjectId(objectId)
                 .withStates(PoolState::TAP_FLYING, state)
                 .withAlign(PoolAlign::CR, PoolAlign::CL)
                 .withTap(PoolTap::ANY));
 
         pool.push_back(
             PoolObject("gravity portal tap flying jump")
-                .withTags(PoolTag::PORTAL | PoolTag::GRAVITY | PoolTag::FALL)
+                .withTags(tags | PoolTag::FALL)
                 .withShares(5.f)
-                .withObjectId(10 + i)
+                .withObjectId(objectId)
                 // not grounded
                 .withStates(PoolState::TAP_FLYING, PoolState::RISING | PoolState::FALLING, state)
                 .withAlign(PoolAlign::CR, PoolAlign::CL)
@@ -579,7 +631,7 @@ const std::vector<PoolObject> GameObjectPool::POOL = []()
         if (i != 3)
             state |= PoolState::GAMEMODE_UFO;
         if (i != 4)
-            state |= PoolState::GAMEMODE_WAVE; // d block: 1755
+            state |= PoolState::GAMEMODE_WAVE;
         if (i != 5)
             state |= PoolState::GAMEMODE_ROBOT;
         if (i != 6)
