@@ -32,15 +32,23 @@ enum PoolTag
     PORTAL = 1 << 5,
 
     // what the block does
-    JUMP = 1 << 6,      // sends player upwards
-    JUMP_HIGH = 1 << 7, // sends player upwards a lot (red pad/orb)
-    FALL = 1 << 8,      // sends player downwards
-    GRAVITY = 1 << 9,   // changes player gravity
-    SIZE_ = 1 << 10,    // changes player size
-    SPEED = 1 << 11,    // changes player speed
-    GAMEMODE = 1 << 12, // changes gamemode
-    SPIDER = 1 << 13,   // teleports player to ground
-    BUFFERED = 1 << 14, // can only be interacted with when a tap is buffered
+    JUMP = 1 << 6,          // sends player upwards
+    JUMP_HIGH = 1 << 7,     // sends player upwards a lot (red pad/orb)
+    FALL = 1 << 8,          // sends player downwards
+    GRAVITY = 1 << 9,       // changes player gravity
+    SIZE_ = 1 << 10,        // changes player size
+    SPEED = 1 << 11,        // changes player speed
+    GAMEMODE = 1 << 12,     // changes gamemode
+    SPIDER = 1 << 13,       // teleports player to ground
+    BUFFERED = 1 << 14,     // can only be interacted with when a tap is buffered
+    EXPERIMENTAL = 1 << 15, // classified as unconventional gameplay
+
+    // "experimental-gameplay": {
+    //     "name": "Experimental gameplay",
+    //     "description": "Adds experimental gameplay elements such as late ring timings and jump pads while flying.",
+    //     "type": "bool",
+    //     "default": false
+    // },
 };
 
 enum PoolState
@@ -87,6 +95,7 @@ enum PoolState
     HAS_BOUNDS = GAMEMODE_SHIP | GAMEMODE_BALL | GAMEMODE_UFO | GAMEMODE_WAVE | GAMEMODE_SPIDER | GAMEMODE_SWING,
     NO_BOUNDS = GAMEMODE_CUBE | GAMEMODE_ROBOT,
     JUMP_NEEDS_BUFFER = GAMEMODE_BALL | GAMEMODE_ROBOT | GAMEMODE_SPIDER,
+    JUMP_CHANGES_GRAVITY = GAMEMODE_BALL | GAMEMODE_SPIDER | GAMEMODE_SWING,
 };
 
 enum PoolAlign

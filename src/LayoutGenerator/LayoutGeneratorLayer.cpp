@@ -628,7 +628,7 @@ const PoolObject *LayoutGeneratorLayer::fishLegally(PlayerData *pd, int excludeT
                 // below middle, relative to gravity
                 if (pd->pos.y * pd->getSign() < mid * pd->getSign())
                 {
-                    if (pd->state & PoolState::HOLD_FLYING)
+                    if (!(pd->state & PoolState::JUMP_CHANGES_GRAVITY))
                     {
                         if (
                             // fall and not gravity
@@ -642,7 +642,7 @@ const PoolObject *LayoutGeneratorLayer::fishLegally(PlayerData *pd, int excludeT
                 }
                 else
                 {
-                    if (pd->state & PoolState::HOLD_FLYING)
+                    if (!(pd->state & PoolState::JUMP_CHANGES_GRAVITY))
                     {
                         if (
                             // jump and not gravity
