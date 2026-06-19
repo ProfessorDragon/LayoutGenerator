@@ -16,7 +16,15 @@ const std::vector<PoolObject> GameObjectPool::POOL = []()
             .withTags(PoolTag::BLOCK | PoolTag::JUMP)
             .withShares(blockShares)
             .withObjectId(-1)
-            .withStates(PoolState::GROUNDED, PoolState::NOT_SPIDER)
+            .withStates(PoolState::GROUNDED, PoolState::NOT_ROBOT, PoolState::NOT_SPIDER)
+            .withTap(PoolTap::TAP));
+
+    pool.push_back(
+        PoolObject("ground jump robot tap")
+            .withTags(PoolTag::BLOCK | PoolTag::JUMP)
+            .withShares(blockShares / 2.f)
+            .withObjectId(-1)
+            .withStates(PoolState::GROUNDED, PoolState::GAMEMODE_ROBOT)
             .withTap(PoolTap::TAP));
 
     pool.push_back(
@@ -67,7 +75,16 @@ const std::vector<PoolObject> GameObjectPool::POOL = []()
             .withTags(PoolTag::BLOCK | PoolTag::JUMP)
             .withShares(blockShares / 2.f)
             .withObjectId(ObjectId::BLOCK)
-            .withStates(PoolState::AIRBORNE, PoolState::FALLING, PoolState::NOT_SPIDER)
+            .withStates(PoolState::AIRBORNE, PoolState::FALLING, PoolState::NOT_ROBOT, PoolState::NOT_SPIDER)
+            .withAlign(PoolAlign::BC, PoolAlign::TC)
+            .withTap(PoolTap::TAP));
+
+    pool.push_back(
+        PoolObject("block jump robot tap")
+            .withTags(PoolTag::BLOCK | PoolTag::JUMP)
+            .withShares(blockShares / 4.f)
+            .withObjectId(ObjectId::BLOCK)
+            .withStates(PoolState::AIRBORNE, PoolState::FALLING, PoolState::GAMEMODE_ROBOT)
             .withAlign(PoolAlign::BC, PoolAlign::TC)
             .withTap(PoolTap::TAP));
 
@@ -309,7 +326,7 @@ const std::vector<PoolObject> GameObjectPool::POOL = []()
 
         pool.push_back(
             PoolObject("jump ring hold flying experimental")
-                .withPartial(p, PoolTag::RING_LATE, .5f)
+                .withPartial(p, PoolTag::RING_LATE | PoolTag::EXPERIMENTAL, .5f)
                 .withStates(PoolState::HOLD_FLYING, PoolState::NOT_WAVE)
                 .withTap(p.tags & PoolTag::JUMP && p.tags & PoolTag::GRAVITY ? PoolTap::TAP : PoolTap::HOLD));
 

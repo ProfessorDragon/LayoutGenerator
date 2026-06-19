@@ -33,8 +33,6 @@ protected:
 
 	bool m_isClickingLastFrame = false;
 
-	CCPoint m_lastGamemodePortalPos;
-
 	const PoolObject *m_lastPlacedFish = nullptr;
 
 	CCPoint m_lastPlacedFishPos;
@@ -46,6 +44,8 @@ protected:
 	CCPoint m_lastSpikeTopPos;
 
 	int m_placeAgainTimer = -1;
+
+	bool m_placedJumpIndicatorLastFrame = false;
 
 	std::vector<PlayerTrailData> m_playerTrail;
 
@@ -80,16 +80,16 @@ protected:
 
 	void placeDebugTrailClicking(CCPoint pos, bool isClicking);
 
-	void placeJumpIndicator(CCPoint pos, bool isUpsideDown, bool isFlying);
+	void placeJumpIndicator(CCPoint pos, int state);
 
 	void placeLabel(std::string text, CCPoint pos);
 
 	void placeSpikeBoundary(
-		CCPoint spikeBottomPos,
-		CCPoint spikeTopPos,
-		CCPoint leftPos,
+		bool bottom,
+		CCPoint bottomPos,
+		bool top,
+		CCPoint topPos,
 		const PlayerTrailData &midTrail,
-		CCPoint rightPos,
 		float dedupDistance);
 
 	void placeSpikeInBounds(CCPoint pos, const PlayerTrailData &trail, bool flipY);

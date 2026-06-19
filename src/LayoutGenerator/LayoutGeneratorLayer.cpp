@@ -3,6 +3,7 @@
 #include "../GameObjectPool/GameObjectPool.hpp"
 #include "../PlayerData/PlayerData.hpp"
 #include "../PoolObject/PoolObject.hpp"
+#include "../PlayerObject.cpp"
 
 LayoutGeneratorLayer *LayoutGeneratorLayer::create()
 {
@@ -65,13 +66,13 @@ void LayoutGeneratorLayer::reset()
     m_halfBeatCount = (int)(m_elapsedTime / (60.f / mod->getSettingValue<float>("bpm")) * 2.f);
     m_hasTappedThisGamemode = false;
     m_isClickingLastFrame = false;
-    m_lastGamemodePortalPos = CCPoint{0.f, m_boundsFloor};
     m_lastPlacedFish = nullptr;
     m_lastPlacedFishPos = CCPoint{};
     m_lastPlayerGamemode = PoolState::GAMEMODE_CUBE;
     m_lastSpikeBottomPos = CCPoint{};
     m_lastSpikeTopPos = CCPoint{};
     m_placeAgainTimer = -1;
+    m_placedJumpIndicatorLastFrame = false;
     m_playerTrail.clear();
     m_shouldTap = PoolTap::NO;
     m_shouldTapTimer = 0;
@@ -112,9 +113,8 @@ void LayoutGeneratorLayer::update(float dt)
         return;
     }
     pd->pos = pd->player->getPosition();
-    pd->vel = CCPoint{
-        (float)pd->player->getCurrentXVelocity() * 60.f * dt,
-        (float)pd->player->getYVelocity() * 60.f * dt};
+    pd->velUnscaled = CCPoint{(float)pd->player->getCurrentXVelocity(), (float)pd->player->getYVelocity()};
+    pd->velScaled = CCPoint{pd->velUnscaled.x * 60.f * dt, pd->velUnscaled.y * 60.f * dt};
     pd->gamemode = getPlayerGamemode(pd->player);
     pd->state = getPlayerState(pd->player);
 
@@ -148,7 +148,8 @@ void LayoutGeneratorLayer::update(float dt)
     }
     m_playerTrail.push_back(PlayerTrailData{
         pd->pos,
-        pd->vel,
+        pd->velUnscaled,
+        pd->velScaled,
         pd->player->getObjectRect().size.width,
         pd->state,
         m_boundsCeil,
@@ -177,11 +178,12 @@ void LayoutGeneratorLayer::update(float dt)
             m_boundsFloor = std::max(90.f, 30.f * std::ceil((pd->player->m_lastPortalPos.y - (height / 2.f + 30.f)) / 30.f));
             m_boundsCeil = m_boundsFloor + height;
         }
-        m_hasTappedThisGamemode = false;
-        m_lastGamemodePortalPos = pd->player->m_lastPortalPos;
 
-        if (pd->gamemode & PoolState::TAP_FLYING && pd->isClicking())
-            placeJumpIndicator(pd->pos, pd->state & PoolState::GRAVITY_REVERSE, true);
+        // i don't THINK this is required with jump indicators v2, but i haven't been able to test it
+        // if (pd->gamemode & PoolState::TAP_FLYING && pd->isClicking())
+        //     placeJumpIndicator(pd->pos, pd->state & PoolState::GRAVITY_REVERSE, true);
+
+        m_hasTappedThisGamemode = false;
     }
 
     // place object on beat (spb = seconds per beat)
@@ -236,7 +238,7 @@ void LayoutGeneratorLayer::update(float dt)
             requireTap |= PoolTap::NO | PoolTap::ANY;
     }
     // avoid reaching terminal velocity (-15.f)
-    else if (pd->player->getYVelocity() * pd->getSign() < -10.f && onHalfBeat)
+    else if (pd->velUnscaled.y * pd->getSign() < -10.f && onHalfBeat)
     {
         shouldPlace = true;
         excludeTags |= PoolTag::FALL;
@@ -283,7 +285,7 @@ void LayoutGeneratorLayer::update(float dt)
             }
             if (fish->tap == PoolTap::NO)
             {
-                m_tapBalance -= 2.f;
+                m_tapBalance -= pd->state & PoolState::HOLD_FLYING ? 1.f : 2.f;
             }
             else if (fish->tap == PoolTap::TAP)
             {
@@ -352,20 +354,42 @@ void LayoutGeneratorLayer::update(float dt)
         m_canPlaceNextFrame = true;
     }
 
+    m_playerTrail.back().fish = fish;
+
     // spikes v2
-    const float scanBehindPlayer = 60.f;
+    const float scanBehindGravity = pd->velUnscaled.x * 24.f; // how much to scan behind for gravity changes
+    const float scanBehindSpike = 60.f;                       // how much to scan behind for spike positioning
     float spikeMargin = mod->getSettingValue<float>("spike-margin");
+    bool spikeBottom = false;
+    bool spikeTop = false;
     float yMin = FLT_MAX;
     float yMax = -FLT_MAX;
     PlayerTrailData leftTrail{};
     PlayerTrailData midTrail{};
     float midMaxShrink = 0.0;
-    float spikeX = pd->pos.x - scanBehindPlayer / 2;
+    float spikeX = pd->pos.x - scanBehindSpike / 2;
     for (auto it = m_playerTrail.rbegin(); it != m_playerTrail.rend(); ++it)
     {
         auto trail = *it;
-        if (trail.pos.x < pd->pos.x - scanBehindPlayer)
+
+        if (trail.pos.x < pd->pos.x - scanBehindGravity)
             break;
+
+        if (trail.state & (PoolState::HAS_BOUNDS | PoolState::GRAVITY_NORMAL) ||
+            // black ring
+            trail.state & PoolState::GRAVITY_REVERSE && trail.velUnscaled.y > 11.f ||
+            // spider
+            (trail.fish && trail.fish->tags & PoolTag::SPIDER))
+            spikeBottom = true;
+        if (trail.state & (PoolState::HAS_BOUNDS | PoolState::GRAVITY_REVERSE) ||
+            // black ring
+            trail.state & PoolState::GRAVITY_NORMAL && trail.velUnscaled.y <= -15.f ||
+            // spider
+            (trail.fish && trail.fish->tags & PoolTag::SPIDER))
+            spikeTop = true;
+
+        if (trail.pos.x < pd->pos.x - scanBehindSpike)
+            continue;
 
         float shrink = 0.f;
         if (trail.state & PoolState::GAMEMODE_WAVE)
@@ -398,11 +422,11 @@ void LayoutGeneratorLayer::update(float dt)
     }
 
     placeSpikeBoundary(
+        spikeBottom,
         CCPoint{spikeX, yMin},
+        spikeTop,
         CCPoint{spikeX, yMax},
-        leftTrail.pos,
         midTrail,
-        pd->pos,
         (leftTrail.state & PoolState::GAMEMODE_SPIDER || pd->state & PoolState::GAMEMODE_SPIDER
              // when performing a spider teleport, the player uses the inner rect for collision,
              // which is approximately the same width as a spike (6). except for wave, which is not handled.
@@ -410,7 +434,7 @@ void LayoutGeneratorLayer::update(float dt)
              ? 6.f
              : pd->player->getObjectRect().size.width) +
             // add one spike width minus xv
-            6.f - pd->vel.x);
+            6.f - pd->velScaled.x);
 
     // jumping
     if (useRandomClicks)
@@ -436,7 +460,7 @@ void LayoutGeneratorLayer::update(float dt)
             // aim for middle of bounds
             auto mid = (m_boundsFloor + m_boundsCeil) / 2.f;
             if (pd->state & PoolState::GAMEMODE_SHIP)
-                mid -= pd->vel.y * 10.f;
+                mid -= pd->velScaled.y * 10.f;
             else if (pd->state & PoolState::GAMEMODE_WAVE)
                 m_shouldTapTimer = 3;
 
@@ -495,22 +519,22 @@ void LayoutGeneratorLayer::update(float dt)
             placeDebugTrailBar(pd->pos);
     }
 
-    // jump indicators
+    // jump indicators v2
     if (mod->getSettingValue<bool>("jump-indicators"))
     {
-        if (pd->state & PoolState::NOT_FLYING)
-        {
-            // consecutive jumps NEVER REGISTER THE PLAYER AS GROUNDED!!!
-            // it's mostly fine but sometimes counts jump pads as jumps
-            // (absolutely miserable workaround)
-            if (pd->isClicking() && (m_isClickingLastFrame || usePlayerClicks) && trailLastFrame.state & PoolState::GROUNDED && trailLastFrame.pos.y != pd->pos.y)
-                placeJumpIndicator(trailLastFrame.pos, trailLastFrame.state & PoolState::GRAVITY_REVERSE, false);
-        }
-        else if (pd->state & PoolState::TAP_FLYING)
-        {
-            if (pd->isClicking() && !m_isClickingLastFrame && (fish == nullptr || !(fish->tags & PoolTag::RING)))
-                placeJumpIndicator(pd->pos, pd->state & PoolState::GRAVITY_REVERSE, true);
-        }
+        if (auto myPlayer = static_cast<MyPlayerObject *>(pd->player))
+            if (myPlayer->m_fields->m_makeJumpIndicator > 0 &&
+                !m_placedJumpIndicatorLastFrame &&
+                // happened to me once during a ship to ufo transition
+                (fish == nullptr || !(fish->tags & PoolTag::RING)))
+            {
+                placeJumpIndicator(trailLastFrame.pos, trailLastFrame.state);
+                m_placedJumpIndicatorLastFrame = true;
+            }
+            else
+            {
+                m_placedJumpIndicatorLastFrame = false;
+            }
     }
 
     m_elapsedTime += dt;
@@ -618,7 +642,7 @@ const PoolObject *LayoutGeneratorLayer::fishLegally(PlayerData *pd, int excludeT
             {
                 auto mid = (m_boundsFloor + m_boundsCeil) / 2.f;
                 if (pd->state & PoolState::GAMEMODE_SHIP)
-                    mid -= pd->vel.y * 10.f;
+                    mid -= pd->velScaled.y * 10.f;
 
                 // maximum distance is 135
                 auto dist = abs(pd->pos.y - mid);
@@ -628,11 +652,8 @@ const PoolObject *LayoutGeneratorLayer::fishLegally(PlayerData *pd, int excludeT
                 {
                     if (!(pd->state & PoolState::JUMP_CHANGES_GRAVITY))
                     {
-                        if (
-                            // fall and not gravity
-                            (fish->tags & PoolTag::FALL && !(fish->tags & PoolTag::GRAVITY))
-                            // jump and gravity
-                            || (fish->tags & PoolTag::JUMP && fish->tags & PoolTag::GRAVITY))
+                        if ((fish->tags & PoolTag::FALL && !(fish->tags & PoolTag::GRAVITY)) ||
+                            (fish->tags & PoolTag::JUMP && fish->tags & PoolTag::GRAVITY))
                             weight *= 1 - dist / 30.f;
                     }
                     else if (fish->tags & PoolTag::FALL)
@@ -642,11 +663,8 @@ const PoolObject *LayoutGeneratorLayer::fishLegally(PlayerData *pd, int excludeT
                 {
                     if (!(pd->state & PoolState::JUMP_CHANGES_GRAVITY))
                     {
-                        if (
-                            // jump and not gravity
-                            (fish->tags & PoolTag::JUMP && !(fish->tags & PoolTag::GRAVITY))
-                            // fall and gravity
-                            || (fish->tags & PoolTag::FALL && fish->tags & PoolTag::GRAVITY))
+                        if ((fish->tags & PoolTag::JUMP && !(fish->tags & PoolTag::GRAVITY)) ||
+                            (fish->tags & PoolTag::FALL && fish->tags & PoolTag::GRAVITY))
                             weight *= 1 - dist / 30.f;
                     }
                     else if (fish->tags & PoolTag::JUMP)
@@ -668,8 +686,8 @@ void LayoutGeneratorLayer::placeFish(PlayerData *pd, const PoolObject *fish, boo
 
     // positioning and placing
     auto pos = CCPoint{
-        pd->pos.x + pd->vel.x,
-        pd->pos.y + (pd->state & PoolState::GROUNDED ? 0.f : pd->vel.y)};
+        pd->pos.x + pd->velScaled.x,
+        pd->pos.y + (pd->state & PoolState::GROUNDED ? 0.f : pd->velScaled.y)};
     if (fish->alignPlayer & PoolAlign::T)
         pos.y += playerRect.size.height / 2.f * pd->getSign();
     else if (fish->alignPlayer & PoolAlign::B)
@@ -783,27 +801,26 @@ void LayoutGeneratorLayer::placeFish(PlayerData *pd, const PoolObject *fish, boo
     }
 
     // place ground below spider taps, pads, and rings
-    if (
-        fish->tags & PoolTag::SPIDER
+    if (fish->tags & PoolTag::SPIDER &&
         // if usePlayerClicks is true, it won't work. the player would already have teleported
         // before it has the chance to place the block.
-        && (!mod->getSettingValue<bool>("use-player-clicks") || !(fish->tags & PoolTag::BLOCK))
+        (!mod->getSettingValue<bool>("use-player-clicks") || !(fish->tags & PoolTag::BLOCK)) &&
         // ensure the fish was actually placed
-        && (fish->objectId < 0 || shouldPlace))
+        (fish->objectId < 0 || shouldPlace))
     {
         bool up = pd->isUpsideDown() != (bool)(fish->tags & PoolTag::GRAVITY);
         float yMin, yMax;
         if (up)
         {
             yMin = pd->pos.y + (fish->tags & PoolTag::GRAVITY ? 30.f : 60.f);
-            yMax = pd->state & PoolState::HAS_BOUNDS ? m_boundsCeil : yMin + 150.f;
+            yMax = pd->state & PoolState::HAS_BOUNDS ? m_boundsCeil : std::min(m_boundsCeil, yMin + 150.f);
         }
         else
         {
             yMax = pd->pos.y - (fish->tags & PoolTag::GRAVITY ? 30.f : 60.f);
-            yMin = pd->state & PoolState::HAS_BOUNDS ? m_boundsFloor : yMax - 150.f;
+            yMin = pd->state & PoolState::HAS_BOUNDS ? m_boundsFloor : std::max(m_boundsFloor, yMax - 150.f);
         }
-        CCPoint pos{pd->pos.x + pd->vel.x, utils::random::generate<float>(yMin, yMax)};
+        CCPoint pos{pd->pos.x + pd->velScaled.x, utils::random::generate<float>(yMin, yMax)};
         auto tempObj = GameObject::createWithKey(ObjectId::BLOCK);
         bool didPlace;
         while (true)
@@ -880,13 +897,17 @@ void LayoutGeneratorLayer::placeDebugTrailClicking(CCPoint pos, bool isClicking)
     obj->m_editorLayer = 1;
 }
 
-void LayoutGeneratorLayer::placeJumpIndicator(CCPoint pos, bool isUpsideDown, bool isFlying)
+void LayoutGeneratorLayer::placeJumpIndicator(CCPoint pos, int state)
 {
-    int sign = isUpsideDown ? -1 : 1;
+    bool isFlying = state & PoolState::FLYING;
+    bool isMini = state & PoolState::SIZE_MINI;
+    int sign = state & PoolState::GRAVITY_REVERSE ? -1 : 1;
+
     auto obj = LevelEditorLayer::get()->createObject(
         isFlying ? ObjectId::JUMP_INDICATOR_FLYING : ObjectId::JUMP_INDICATOR_GROUNDED,
-        pos + CCPoint{0.f, isFlying ? 0.f : -5.f * sign},
+        pos + CCPoint{0.f, isFlying || isMini ? 0.f : -5.f * sign},
         true);
+
     if (isFlying)
     {
         obj->updateCustomScaleX(0.5);
@@ -896,6 +917,7 @@ void LayoutGeneratorLayer::placeJumpIndicator(CCPoint pos, bool isUpsideDown, bo
     {
         obj->setRotation(90.f * sign);
     }
+
     obj->m_editorLayer = 1;
 }
 
@@ -910,11 +932,11 @@ void LayoutGeneratorLayer::placeLabel(std::string text, CCPoint pos)
 }
 
 void LayoutGeneratorLayer::placeSpikeBoundary(
-    CCPoint spikeBottomPos,
-    CCPoint spikeTopPos,
-    CCPoint leftPos,
+    bool bottom,
+    CCPoint bottomPos,
+    bool top,
+    CCPoint topPos,
     const PlayerTrailData &midTrail,
-    CCPoint rightPos,
     float dedupDistance)
 {
     // wave (slopes) (unused)
@@ -949,45 +971,51 @@ void LayoutGeneratorLayer::placeSpikeBoundary(
     const float verticalFillDist = 30.f;
 
     // bottom
-    if (getObjectNearPoint(spikeBottomPos, dedupDistance, ObjectId::SPIKE) == nullptr)
+    if (getObjectNearPoint(bottomPos, dedupDistance, ObjectId::SPIKE) == nullptr)
     {
-        placeSpikeInBounds(spikeBottomPos, midTrail, false);
-        if (m_lastSpikeBottomPos.x > 0)
+        if (bottom)
         {
-            CCPoint spikeBottomPos2 = spikeBottomPos;
-            while (spikeBottomPos2.y > m_lastSpikeBottomPos.y + verticalFillDist)
+            placeSpikeInBounds(bottomPos, midTrail, false);
+            if (m_lastSpikeBottomPos.x > 0)
             {
-                spikeBottomPos2.y -= verticalFillDist;
-                placeSpikeInBounds(spikeBottomPos2, midTrail, false);
-            }
-            while (spikeBottomPos.y < m_lastSpikeBottomPos.y - verticalFillDist)
-            {
-                m_lastSpikeBottomPos.y -= verticalFillDist;
-                placeSpikeInBounds(m_lastSpikeBottomPos, midTrail, false);
+                CCPoint bottomPos2 = bottomPos;
+                while (bottomPos2.y > m_lastSpikeBottomPos.y + verticalFillDist)
+                {
+                    bottomPos2.y -= verticalFillDist;
+                    placeSpikeInBounds(bottomPos2, midTrail, false);
+                }
+                while (bottomPos.y < m_lastSpikeBottomPos.y - verticalFillDist)
+                {
+                    m_lastSpikeBottomPos.y -= verticalFillDist;
+                    placeSpikeInBounds(m_lastSpikeBottomPos, midTrail, false);
+                }
             }
         }
-        m_lastSpikeBottomPos = spikeBottomPos;
+        m_lastSpikeBottomPos = bottomPos;
     }
 
     // top
-    if (getObjectNearPoint(spikeTopPos, dedupDistance, ObjectId::SPIKE) == nullptr)
+    if (getObjectNearPoint(topPos, dedupDistance, ObjectId::SPIKE) == nullptr)
     {
-        placeSpikeInBounds(spikeTopPos, midTrail, true);
-        if (m_lastSpikeTopPos.x > 0)
+        if (top)
         {
-            while (spikeTopPos.y > m_lastSpikeTopPos.y + verticalFillDist)
+            placeSpikeInBounds(topPos, midTrail, true);
+            if (m_lastSpikeTopPos.x > 0)
             {
-                m_lastSpikeTopPos.y += verticalFillDist;
-                placeSpikeInBounds(m_lastSpikeTopPos, midTrail, true);
-            }
-            CCPoint spikeTopPos2 = spikeTopPos;
-            while (spikeTopPos2.y < m_lastSpikeTopPos.y - verticalFillDist)
-            {
-                spikeTopPos2.y += verticalFillDist;
-                placeSpikeInBounds(spikeTopPos2, midTrail, true);
+                while (topPos.y > m_lastSpikeTopPos.y + verticalFillDist)
+                {
+                    m_lastSpikeTopPos.y += verticalFillDist;
+                    placeSpikeInBounds(m_lastSpikeTopPos, midTrail, true);
+                }
+                CCPoint topPos2 = topPos;
+                while (topPos2.y < m_lastSpikeTopPos.y - verticalFillDist)
+                {
+                    topPos2.y += verticalFillDist;
+                    placeSpikeInBounds(topPos2, midTrail, true);
+                }
             }
         }
-        m_lastSpikeTopPos = spikeTopPos;
+        m_lastSpikeTopPos = topPos;
     }
 }
 

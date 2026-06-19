@@ -11,7 +11,9 @@ struct PlayerData
 
     CCPoint pos;
 
-    CCPoint vel;
+    CCPoint velUnscaled;
+
+    CCPoint velScaled;
 
     PoolState gamemode = PoolState::NONE;
 
@@ -28,7 +30,9 @@ struct PlayerTrailData
 {
     CCPoint pos;
 
-    CCPoint vel;
+    CCPoint velUnscaled;
+
+    CCPoint velScaled;
 
     float rectWidth;
 
@@ -37,4 +41,6 @@ struct PlayerTrailData
     float boundsCeil;
 
     float boundsFloor;
+
+    const PoolObject *fish = nullptr;
 };

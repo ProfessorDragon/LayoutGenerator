@@ -1,3 +1,9 @@
+# 1.2.1
+
+- Places fewer spikes in cube/robot
+- Places jump indicators in cube/ball/robot/spider more reliably
+
+
 # 1.2.0
 
 - Improved ship and wave gameplay
