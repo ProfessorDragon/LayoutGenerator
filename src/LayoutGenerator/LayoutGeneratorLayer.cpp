@@ -678,7 +678,8 @@ const PoolObject *LayoutGeneratorLayer::fishLegally(PlayerData *pd, int excludeT
 
 void LayoutGeneratorLayer::placeFish(PlayerData *pd, const PoolObject *fish, bool dedup, bool useLastY)
 {
-    log::info("{} {}", m_fishId, fish->name);
+    // this log MIGHT cause crashes
+    // log::info("{} {}", m_fishId, fish->name);
 
     auto mod = Mod::get();
     auto editor = LevelEditorLayer::get();
@@ -1196,8 +1197,6 @@ int LayoutGeneratorLayer::getPlayerState(PlayerObject *player)
     // ground detection (doesn't work for flying gamemodes)
     if (state & PoolState::NOT_FLYING)
         state |= player->m_isOnGround ? PoolState::GROUNDED : PoolState::AIRBORNE;
-    // log::debug("{} {} {} {} {}", player->m_isOnGround, player->m_isOnGround2, player->m_isOnGround3,
-    // player->m_isOnGround4, yv);
 
     return state;
 }
