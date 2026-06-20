@@ -2,7 +2,7 @@
 
 - Fixed missing jump indicators in cube/ball/robot/spider
 - Fixed orb spam when holding with 'use player clicks' enabled
-- Fixed bad_alloc crash
+- Maybe fixed bad_alloc crash
 - Tweaked spike boundary generation:
     - No upper spike boundary in cube/robot
     - Places fewer spikes in spike columns

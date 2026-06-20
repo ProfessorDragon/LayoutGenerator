@@ -228,7 +228,7 @@ void LayoutGeneratorLayer::update(float dt)
             requireTap |= PoolTap::NO | PoolTap::ANY;
         }
 
-        // TODO cube/robot failsafe for jumping into the floor in reverse gravity
+        // maybe add a failsafe in cube/robot for jumping into the floor in reverse gravity?
     }
 
     if (shouldPlace)
@@ -508,7 +508,7 @@ void LayoutGeneratorLayer::update(float dt)
                     {
                         // hold for a random duration
                         if (m_shouldTap == PoolTap::HOLD_RANDOM)
-                            m_shouldTapTimer = utils::random::generate<int>(2, 21);
+                            m_shouldTapTimer = (int)(utils::random::generate<float>(.03f, .33f) / dt);
                         else
                             m_shouldTapTimer = 3;
                     }
