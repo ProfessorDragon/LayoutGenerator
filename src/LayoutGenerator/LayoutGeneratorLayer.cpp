@@ -581,7 +581,9 @@ const PoolObject *LayoutGeneratorLayer::fishLegally(PlayerData *pd, float dt, in
 
     const int blindScanBehind = (int)(.3f / dt);
     bool isBlind = false;
-    if (m_playerTrail.size() > blindScanBehind && pd->state & PoolState::NO_BOUNDS)
+    if (!mod->getSettingValue<bool>("use-player-clicks") &&
+        m_playerTrail.size() > blindScanBehind &&
+        pd->state & PoolState::NO_BOUNDS)
         isBlind = abs(pd->pos.y - m_playerTrail[m_playerTrail.size() - blindScanBehind].pos.y) > 130.f;
 
     return GameObjectPool::fish(
