@@ -1,7 +1,11 @@
 # 1.2.1
 
-- Places fewer spikes in cube/robot
-- Places jump indicators in cube/ball/robot/spider more reliably
+- Fixed missing jump indicators in cube/ball/robot/spider
+- Fixed orb spam when holding with 'use player clicks' enabled
+- Tweaked spike boundary generation:
+    - No upper spike boundary in cube/robot
+    - Places fewer spikes in spike columns
+    - Prevents the player from escaping the spike boundary with spider objects
 
 
 # 1.2.0

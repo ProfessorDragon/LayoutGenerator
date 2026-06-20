@@ -19,7 +19,9 @@ struct PlayerData
 
     int state = 0;
 
-    bool isClicking() { return player->m_holdingButtons[(int)PlayerButton::Jump]; }
+    // m_jumpBuffered seems to be the same as m_holdingButtons[(int)PlayerButton::Jump],
+    // but is false after hitting a spider pad/ring
+    bool isClicking() { return player->m_jumpBuffered; }
 
     bool isUpsideDown() { return player->m_isUpsideDown; }
 

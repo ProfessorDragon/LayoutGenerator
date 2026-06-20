@@ -227,6 +227,8 @@ void LayoutGeneratorLayer::update(float dt)
         {
             requireTap |= PoolTap::NO | PoolTap::ANY;
         }
+
+        // TODO cube/robot failsafe for jumping into the floor in reverse gravity
     }
 
     if (shouldPlace)
@@ -357,22 +359,22 @@ void LayoutGeneratorLayer::update(float dt)
     m_playerTrail.back().fish = fish;
 
     // spikes v2
-    const float scanBehindGravity = pd->velUnscaled.x * 24.f; // how much to scan behind for gravity changes
-    const float scanBehindSpike = 60.f;                       // how much to scan behind for spike positioning
-    float spikeMargin = mod->getSettingValue<float>("spike-margin");
+    const float spikeMargin = mod->getSettingValue<float>("spike-margin");
+    const float spikeX = pd->pos.x - 30.f;
     bool spikeBottom = false;
     bool spikeTop = false;
     float yMin = FLT_MAX;
     float yMax = -FLT_MAX;
     PlayerTrailData leftTrail{};
     PlayerTrailData midTrail{};
+    bool closeTheSpiderGap = false;
     float midMaxShrink = 0.0;
-    float spikeX = pd->pos.x - scanBehindSpike / 2;
     for (auto it = m_playerTrail.rbegin(); it != m_playerTrail.rend(); ++it)
     {
         auto trail = *it;
 
-        if (trail.pos.x < pd->pos.x - scanBehindGravity)
+        // scan range for gravity changes
+        if (trail.pos.x < pd->pos.x - pd->velUnscaled.x * 30.f)
             break;
 
         if (trail.state & (PoolState::HAS_BOUNDS | PoolState::GRAVITY_NORMAL) ||
@@ -388,7 +390,18 @@ void LayoutGeneratorLayer::update(float dt)
             (trail.fish && trail.fish->tags & PoolTag::SPIDER))
             spikeTop = true;
 
-        if (trail.pos.x < pd->pos.x - scanBehindSpike)
+        // check for spider elements that would let the player slip through the gaps
+        if (trail.pos.x > pd->pos.x - 96.f && trail.pos.x < spikeX)
+        {
+            if (trail.state & PoolState::GAMEMODE_SPIDER)
+                closeTheSpiderGap = true;
+            else if (trail.fish && trail.fish->tags & PoolTag::SPIDER)
+                closeTheSpiderGap = true;
+        }
+
+        // scan range for spike positioning
+        // (spikeX is the midpoint, pos.x - 30.f)
+        if (trail.pos.x < pd->pos.x - 60.f)
             continue;
 
         float shrink = 0.f;
@@ -427,7 +440,7 @@ void LayoutGeneratorLayer::update(float dt)
         spikeTop,
         CCPoint{spikeX, yMax},
         midTrail,
-        (leftTrail.state & PoolState::GAMEMODE_SPIDER || pd->state & PoolState::GAMEMODE_SPIDER
+        (closeTheSpiderGap
              // when performing a spider teleport, the player uses the inner rect for collision,
              // which is approximately the same width as a spike (6). except for wave, which is not handled.
              // it does not change in mini size.
@@ -679,6 +692,7 @@ const PoolObject *LayoutGeneratorLayer::fishLegally(PlayerData *pd, int excludeT
 void LayoutGeneratorLayer::placeFish(PlayerData *pd, const PoolObject *fish, bool dedup, bool useLastY)
 {
     // this log MIGHT cause crashes
+    // (or maybe fish is an invalid pointer but how would that even happen)
     // log::info("{} {}", m_fishId, fish->name);
 
     auto mod = Mod::get();
@@ -969,7 +983,8 @@ void LayoutGeneratorLayer::placeSpikeBoundary(
     //     }
     // }
 
-    const float verticalFillDist = 30.f;
+    // player height + spike height - 1
+    const float verticalFillDist = midTrail.rectWidth + 11.f;
 
     // bottom
     if (getObjectNearPoint(bottomPos, dedupDistance, ObjectId::SPIKE) == nullptr)
