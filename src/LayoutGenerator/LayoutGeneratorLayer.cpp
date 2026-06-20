@@ -275,7 +275,7 @@ void LayoutGeneratorLayer::update(float dt)
         if (!onBeat)
             excludeTags |= PoolTag::GAMEMODE | PoolTag::SPEED | PoolTag::SIZE_;
 
-        fish = fishLegally(pd, excludeTags, requireTap);
+        fish = fishLegally(pd, dt, excludeTags, requireTap);
         if (fish)
         {
             placeFish(pd, fish);
@@ -316,13 +316,16 @@ void LayoutGeneratorLayer::update(float dt)
                 if (utils::random::chance(0.5))
                 {
                     m_placeAgainTimer = 2;
+
                     // ensure we have enough ground for the next fish if the player is grounded currently
                     if (pd->state & PoolState::GROUNDED)
                     {
-                        auto fish2 = PoolObject("!! GROUNDED PLACEAGAIN !!")
-                                         .withObjectId(ObjectId::BLOCK)
-                                         .withAlign(PoolAlign::BC, PoolAlign::TC);
-                        placeFish(pd, &fish2);
+                        log::debug("{} {} GROUNDED PLACEAGAIN", m_fishId, fish->name);
+                        CCPoint pos = pd->pos;
+                        pos.y -= pd->player->getObjectRect().size.height / 2.f * pd->getSign();
+                        pos.y -= 15.f * pd->getSign();
+                        if (!isOutOfBounds(pos.y, 30.f, pd->state & PoolState::HAS_BOUNDS))
+                            editor->createObject(ObjectId::BLOCK, pos, true);
                     }
                 }
             }
@@ -555,7 +558,7 @@ void LayoutGeneratorLayer::update(float dt)
     m_lastPlayerGamemode = pd->gamemode;
 }
 
-const PoolObject *LayoutGeneratorLayer::fishLegally(PlayerData *pd, int excludeTags, int requireTap)
+const PoolObject *LayoutGeneratorLayer::fishLegally(PlayerData *pd, float dt, int excludeTags, int requireTap)
 {
     // playerFollowFloats usage
     // auto followFloats = player->m_playerFollowFloats;
@@ -576,9 +579,10 @@ const PoolObject *LayoutGeneratorLayer::fishLegally(PlayerData *pd, int excludeT
     if (!mod->getSettingValue<bool>("tag-experimental"))
         excludeTags |= PoolTag::EXPERIMENTAL;
 
+    const int blindScanBehind = (int)(.3f / dt);
     bool isBlind = false;
-    if (m_playerTrail.size() > 18)
-        isBlind = abs(pd->pos.y - m_playerTrail[m_playerTrail.size() - 18].pos.y) > 130.f;
+    if (m_playerTrail.size() > blindScanBehind && pd->state & PoolState::NO_BOUNDS)
+        isBlind = abs(pd->pos.y - m_playerTrail[m_playerTrail.size() - blindScanBehind].pos.y) > 130.f;
 
     return GameObjectPool::fish(
         [&](const PoolObject *fish)
@@ -692,7 +696,6 @@ const PoolObject *LayoutGeneratorLayer::fishLegally(PlayerData *pd, int excludeT
 void LayoutGeneratorLayer::placeFish(PlayerData *pd, const PoolObject *fish, bool dedup, bool useLastY)
 {
     // this log MIGHT cause crashes
-    // (or maybe fish is an invalid pointer but how would that even happen)
     // log::info("{} {}", m_fishId, fish->name);
 
     auto mod = Mod::get();

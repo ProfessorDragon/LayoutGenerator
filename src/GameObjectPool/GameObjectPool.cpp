@@ -20,25 +20,9 @@ const std::vector<PoolObject> GameObjectPool::POOL = []()
             .withTap(PoolTap::TAP));
 
     pool.push_back(
-        PoolObject("ground jump robot tap")
+        PoolObject("ground jump robot")
             .withTags(PoolTag::BLOCK | PoolTag::JUMP)
-            .withShares(blockShares / 2.f)
-            .withObjectId(-1)
-            .withStates(PoolState::GROUNDED, PoolState::GAMEMODE_ROBOT)
-            .withTap(PoolTap::TAP));
-
-    pool.push_back(
-        PoolObject("ground jump robot hold")
-            .withTags(PoolTag::BLOCK | PoolTag::JUMP)
-            .withShares(blockShares / 2.f)
-            .withObjectId(-1)
-            .withStates(PoolState::GROUNDED, PoolState::GAMEMODE_ROBOT)
-            .withTap(PoolTap::HOLD));
-
-    pool.push_back(
-        PoolObject("ground jump robot hold random")
-            .withTags(PoolTag::BLOCK | PoolTag::JUMP)
-            .withShares(blockShares / 2.f)
+            .withShares(blockShares)
             .withObjectId(-1)
             .withStates(PoolState::GROUNDED, PoolState::GAMEMODE_ROBOT)
             .withTap(PoolTap::HOLD_RANDOM));
@@ -80,27 +64,9 @@ const std::vector<PoolObject> GameObjectPool::POOL = []()
             .withTap(PoolTap::TAP));
 
     pool.push_back(
-        PoolObject("block jump robot tap")
+        PoolObject("block jump robot")
             .withTags(PoolTag::BLOCK | PoolTag::JUMP)
-            .withShares(blockShares / 4.f)
-            .withObjectId(ObjectId::BLOCK)
-            .withStates(PoolState::AIRBORNE, PoolState::FALLING, PoolState::GAMEMODE_ROBOT)
-            .withAlign(PoolAlign::BC, PoolAlign::TC)
-            .withTap(PoolTap::TAP));
-
-    pool.push_back(
-        PoolObject("block jump robot hold")
-            .withTags(PoolTag::BLOCK | PoolTag::JUMP)
-            .withShares(blockShares / 4.f)
-            .withObjectId(ObjectId::BLOCK)
-            .withStates(PoolState::AIRBORNE, PoolState::FALLING, PoolState::GAMEMODE_ROBOT)
-            .withAlign(PoolAlign::BC, PoolAlign::TC)
-            .withTap(PoolTap::HOLD));
-
-    pool.push_back(
-        PoolObject("block jump robot hold random")
-            .withTags(PoolTag::BLOCK | PoolTag::JUMP)
-            .withShares(blockShares / 4.f)
+            .withShares(blockShares / 2.f)
             .withObjectId(ObjectId::BLOCK)
             .withStates(PoolState::AIRBORNE, PoolState::FALLING, PoolState::GAMEMODE_ROBOT)
             .withAlign(PoolAlign::BC, PoolAlign::TC)

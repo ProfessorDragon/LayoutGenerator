@@ -68,7 +68,7 @@ protected:
 
 	void update(float dt) override;
 
-	const PoolObject *fishLegally(PlayerData *pd, int excludeTags, int requireTap);
+	const PoolObject *fishLegally(PlayerData *pd, float dt, int excludeTags, int requireTap);
 
 	void placeFish(PlayerData *pd, const PoolObject *fish, bool dedup = false, bool useLastY = false);
 
