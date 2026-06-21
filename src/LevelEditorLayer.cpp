@@ -1,3 +1,5 @@
+#pragma once
+
 #include <Geode/Geode.hpp>
 #include "LayoutGenerator/LayoutGeneratorLayer.hpp"
 

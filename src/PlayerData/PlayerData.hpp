@@ -36,7 +36,7 @@ struct PlayerTrailData
 
     CCPoint velScaled;
 
-    float rectWidth;
+    CCSize rectSize;
 
     int state;
 

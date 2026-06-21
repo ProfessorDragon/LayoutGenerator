@@ -150,7 +150,7 @@ void LayoutGeneratorLayer::update(float dt)
         pd->pos,
         pd->velUnscaled,
         pd->velScaled,
-        pd->player->getObjectRect().size.width,
+        pd->player->getObjectRect().size,
         pd->state,
         m_boundsCeil,
         m_boundsFloor});
@@ -363,7 +363,20 @@ void LayoutGeneratorLayer::update(float dt)
 
     // spikes v2
     const float spikeMargin = mod->getSettingValue<float>("spike-margin");
-    const float spikeX = pd->pos.x - 30.f;
+    const CCSize playerSize = pd->player->getObjectRect().size;
+
+    // slightly larger than a spike hitbox, because just grazing the side of a spike kills you
+    const CCSize spikeSize{8.f, 14.f};
+
+    // 30 units is the largest width that the player hitbox can ever be
+    const float spikeScanRight = pd->pos.x - (30.f - playerSize.width) / 2.f;
+
+    // place the right of the spike on the left of the player
+    const float spikeX = spikeScanRight - (playerSize.width + spikeSize.width) / 2.f;
+
+    // scan until the right of the player is past the left of the spike
+    const float spikeScanLeft = spikeX - (playerSize.width + spikeSize.width) / 2.f;
+
     bool spikeBottom = false;
     bool spikeTop = false;
     float yMin = FLT_MAX;
@@ -376,17 +389,24 @@ void LayoutGeneratorLayer::update(float dt)
     {
         auto trail = *it;
 
+        if (trail.pos.x > spikeScanRight)
+            continue;
+
         // scan range for gravity changes
         if (trail.pos.x < pd->pos.x - pd->velUnscaled.x * 30.f)
             break;
 
-        if (trail.state & (PoolState::HAS_BOUNDS | PoolState::GRAVITY_NORMAL) ||
+        if (
+            // airborne or flying or ball/spider
+            trail.state & (PoolState::AIRBORNE | PoolState::HAS_BOUNDS) ||
             // black ring
-            trail.state & PoolState::GRAVITY_REVERSE && trail.velUnscaled.y > 11.f ||
+            trail.state & PoolState::GRAVITY_REVERSE && trail.velUnscaled.y >= 15.f ||
             // spider
             (trail.fish && trail.fish->tags & PoolTag::SPIDER))
             spikeBottom = true;
-        if (trail.state & (PoolState::HAS_BOUNDS | PoolState::GRAVITY_REVERSE) ||
+        if (
+            // airborne or flying or ball/spider
+            trail.state & (PoolState::AIRBORNE | PoolState::HAS_BOUNDS) ||
             // black ring
             trail.state & PoolState::GRAVITY_NORMAL && trail.velUnscaled.y <= -15.f ||
             // spider
@@ -403,8 +423,7 @@ void LayoutGeneratorLayer::update(float dt)
         }
 
         // scan range for spike positioning
-        // (spikeX is the midpoint, pos.x - 30.f)
-        if (trail.pos.x < pd->pos.x - 60.f)
+        if (trail.pos.x < spikeScanLeft)
             continue;
 
         float shrink = 0.f;
@@ -415,8 +434,8 @@ void LayoutGeneratorLayer::update(float dt)
         else if (trail.state & PoolState::GAMEMODE_UFO && trail.state & PoolState::SIZE_MINI)
             shrink = 10.f;
 
-        float evilSpikeMargin = (trail.state & PoolState::SIZE_MINI ? .6f : 1.f) * (trail.state & PoolState::GAMEMODE_WAVE ? .8f : 1.f) * 15.f + 8.f;
-        float shrunkSpikeMargin = std::max(evilSpikeMargin, spikeMargin - shrink);
+        float evilSpikeMargin = (trail.rectSize.height + spikeSize.height) / 2.f;
+        float shrunkSpikeMargin = evilSpikeMargin + std::max(spikeMargin - shrink, 0.f);
         leftTrail = trail;
         if (trail.pos.x > spikeX)
         {
@@ -437,20 +456,27 @@ void LayoutGeneratorLayer::update(float dt)
             yMax -= jumpShrink;
     }
 
+    spikeBottom = spikeBottom && !(midTrail.state & PoolState::GRAVITY_NORMAL && midTrail.state & PoolState::GROUNDED);
+    spikeTop = spikeTop && !(midTrail.state & PoolState::GRAVITY_REVERSE && midTrail.state & PoolState::GROUNDED);
+
     placeSpikeBoundary(
         spikeBottom,
         CCPoint{spikeX, yMin},
         spikeTop,
         CCPoint{spikeX, yMax},
         midTrail,
-        (closeTheSpiderGap
-             // when performing a spider teleport, the player uses the inner rect for collision,
-             // which is approximately the same width as a spike (6). except for wave, which is not handled.
-             // it does not change in mini size.
-             ? 6.f
-             : pd->player->getObjectRect().size.width) +
-            // add one spike width minus xv
-            6.f - pd->velScaled.x);
+        spikeMargin <= 0.f
+            // zero spike margin will do this just for fun
+            ? 0.f
+            // otherwise...
+            : (closeTheSpiderGap
+                   // when performing a spider teleport, the player uses the inner rect for collision,
+                   // which is approximately 6 units wide. (except for wave, which is not handled.)
+                   // it does not change when mini.
+                   ? 6.f
+                   : playerSize.width) +
+                  // add one spike width minus xv
+                  6.f - pd->velScaled.x);
 
     // jumping
     if (useRandomClicks)
@@ -989,7 +1015,7 @@ void LayoutGeneratorLayer::placeSpikeBoundary(
     // }
 
     // player height + spike height - 1
-    const float verticalFillDist = midTrail.rectWidth + 11.f;
+    const float verticalFillDist = midTrail.rectSize.height + 11.f;
 
     // bottom
     if (getObjectNearPoint(bottomPos, dedupDistance, ObjectId::SPIKE) == nullptr)
@@ -1062,10 +1088,10 @@ bool LayoutGeneratorLayer::doesRectInterfereWithTrail(CCRect rect, float playerX
             break;
 
         auto playerRect = CCRect(
-            trail.pos.x - trail.rectWidth / 2.f,
-            trail.pos.y - trail.rectWidth / 2.f,
-            trail.rectWidth,
-            trail.rectWidth);
+            trail.pos.x - trail.rectSize.width / 2.f,
+            trail.pos.y - trail.rectSize.height / 2.f,
+            trail.rectSize.width,
+            trail.rectSize.height);
 
         // shrink slightly if it's a block because of the inner hitbox tolerance
         if (isBlock)
