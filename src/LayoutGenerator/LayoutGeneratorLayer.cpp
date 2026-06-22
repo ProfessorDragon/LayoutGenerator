@@ -359,12 +359,12 @@ void LayoutGeneratorLayer::update(float dt)
     m_playerTrail.back().fish = fish;
 
     // spikes v2
-    // TODO the intended gap for spider clicks is way too tight
     const float spikeMargin = mod->getSettingValue<float>("spike-margin");
     const CCSize playerSize = pd->getRectSize();
 
     // slightly larger than a spike hitbox, because just grazing the side of a spike kills you
-    const CCSize spikeSize{8.f, 14.f};
+    // also make it a bit wider according to the spikeMargin
+    const CCSize spikeSize{8.f + spikeMargin / 2.f, 14.f};
 
     // 30 units is the largest width that the player hitbox can ever be
     const float spikeScanRight = pd->pos.x - (30.f - playerSize.width) / 2.f;
@@ -859,7 +859,7 @@ void LayoutGeneratorLayer::placeFish(PlayerData *pd, const PoolObject *fish, boo
             tempObjRect.origin += pos;
             if (!doesRectInterfereWithTrail(tempObjRect, pd->pos.x, true, pd->state & PoolState::SIZE_MINI))
             {
-                editor->createObject(ObjectId::BLOCK, pos, true);
+                editor->createObject(ObjectId::BLOCK, pos, true)->setFlipY(up);
                 didPlace = true;
                 break;
             }
