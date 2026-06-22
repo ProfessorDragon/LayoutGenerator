@@ -21,9 +21,7 @@ LayoutGeneratorLayer *LayoutGeneratorLayer::create()
 bool LayoutGeneratorLayer::init()
 {
     if (!CCLayer::init())
-    {
         return false;
-    }
 
     // parse hitboxes file
     // auto path = geode::Mod::get()->getResourcesDir() / "hitboxes.json";

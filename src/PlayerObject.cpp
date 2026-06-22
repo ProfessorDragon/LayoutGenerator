@@ -1,3 +1,5 @@
+#pragma once
+
 #include <Geode/Geode.hpp>
 
 using namespace geode::prelude;
@@ -15,6 +17,15 @@ class $modify(MyPlayerObject, PlayerObject)
         m_fields->m_makeJumpIndicator--;
 
         PlayerObject::update(dt);
+
+        // this breaks some things
+        // if (auto editor = static_cast<MyLevelEditorLayer *>(LevelEditorLayer::get()))
+        // {
+        //     if (auto builder = editor->m_fields->m_builder)
+        //     {
+        //         builder->update(dt);
+        //     }
+        // }
     }
 
     void updateJump(float dt)
