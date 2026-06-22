@@ -1,3 +1,12 @@
+# 1.2.2
+
+- Tweaked a setting that may have prevented objects from spawning when clicking with 'use player clicks' enabled
+- Tweaked spike boundary generation:
+    - A spike margin of 0 now accurately reflects the tightest possible boundary
+    - Spikes will not spawn when the player is on the ground in cube/robot
+    - Default spike margin set to 50
+
+
 # 1.2.1
 
 - Fixed missing jump indicators in cube/ball/robot/spider
