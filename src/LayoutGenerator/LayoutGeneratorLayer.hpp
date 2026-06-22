@@ -94,6 +94,8 @@ protected:
 
 	bool doesRectInterfereWithTrail(CCRect rect, float playerX, bool isBlock, bool isMini);
 
+	void fillSpiderTrail(CCPoint pos);
+
 	bool isOutOfBounds(float y, float height, bool hasUpperBound, float boundsCeil, float boundsFloor);
 
 	bool isOutOfBounds(float y, float height, bool hasUpperBound);

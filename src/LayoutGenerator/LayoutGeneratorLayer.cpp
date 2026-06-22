@@ -124,29 +124,7 @@ void LayoutGeneratorLayer::update(float dt)
         trail.boundsCeil = m_boundsCeil;
         trail.boundsFloor = m_boundsFloor;
 
-        // fill in the gaps when a spider pad/ring is hit
-        if (!m_playerTrail.empty())
-        {
-            const float spiderFillDistance = 30.f;
-            CCPoint pos = trail.pos;
-            while (abs(pos.y - pd->pos.y) > spiderFillDistance)
-            {
-                pos.y += spiderFillDistance * (pos.y > pd->pos.y ? -1 : 1);
-
-                PlayerTrailData spiderFillTrail(m_playerTrail.back());
-                spiderFillTrail.pos = pos;
-                if (spiderFillTrail.state & PoolState::GROUNDED)
-                {
-                    spiderFillTrail.state &= ~PoolState::GROUNDED;
-                    spiderFillTrail.state |= PoolState::AIRBORNE;
-                }
-
-                m_playerTrail.push_back(spiderFillTrail);
-
-                if (mod->getSettingValue<bool>("debug-trail"))
-                    placeDebugTrailClicking(spiderFillTrail.pos, spiderFillTrail.isClicking);
-            }
-        }
+        fillSpiderTrail(trail.pos);
 
         m_playerTrail.push_back(trail);
 
@@ -159,6 +137,8 @@ void LayoutGeneratorLayer::update(float dt)
             placeJumpIndicator(trail.pos, trail.state);
     }
     pd->player->m_fields->m_queuedTrail.clear();
+
+    fillSpiderTrail(pd->pos);
 
     // player isn't ready yet
     if (m_playerTrail.empty())
@@ -252,7 +232,8 @@ void LayoutGeneratorLayer::update(float dt)
             requireTap |= PoolTap::NO | PoolTap::ANY;
     }
     // avoid reaching terminal velocity (-15.f)
-    else if (pd->velUnscaled.y * pd->getSign() < -10.f && pd->state & PoolState::NO_BOUNDS && onHalfBeat)
+    else if (pd->velUnscaled.y * pd->getSign() < -10.f &&
+             pd->state & (PoolState::NO_BOUNDS | PoolState::GAMEMODE_BALL) && onHalfBeat)
     {
         shouldPlace = true;
         excludeTags |= PoolTag::FALL;
@@ -265,11 +246,10 @@ void LayoutGeneratorLayer::update(float dt)
             requireTap |= PoolTap::TAP_OR_HOLD;
     }
     // half beat
-    else if (utils::random::chance(0.5) && onHalfBeat)
+    else if ((pd->gamemode & PoolState::FLYING || utils::random::chance(3.0 / 4.0)) && onHalfBeat)
+    {
         shouldPlace = true;
-    // flying fallback
-    else if (pd->gamemode & PoolState::FLYING && onHalfBeat)
-        shouldPlace = true;
+    }
 
     // prevent placing two objects in two sequential frames
     if (!m_canPlaceNextFrame)
@@ -1093,6 +1073,34 @@ bool LayoutGeneratorLayer::doesRectInterfereWithTrail(CCRect rect, float playerX
     }
 
     return false;
+}
+
+// fill in the gaps in a trail when a spider pad/ring is hit
+void LayoutGeneratorLayer::fillSpiderTrail(CCPoint targetPos)
+{
+    if (m_playerTrail.empty())
+        return;
+
+    const float fillDistance = 30.f;
+
+    CCPoint pos = m_playerTrail.back().pos;
+    while (abs(pos.y - targetPos.y) > fillDistance)
+    {
+        pos.y += fillDistance * (pos.y > targetPos.y ? -1 : 1);
+
+        PlayerTrailData spiderFillTrail(m_playerTrail.back());
+        spiderFillTrail.pos = pos;
+        if (spiderFillTrail.state & PoolState::GROUNDED)
+        {
+            spiderFillTrail.state &= ~PoolState::GROUNDED;
+            spiderFillTrail.state |= PoolState::AIRBORNE;
+        }
+
+        m_playerTrail.push_back(spiderFillTrail);
+
+        if (Mod::get()->getSettingValue<bool>("debug-trail"))
+            placeDebugTrailClicking(spiderFillTrail.pos, spiderFillTrail.isClicking);
+    }
 }
 
 bool LayoutGeneratorLayer::isOutOfBounds(float y, float height, bool hasUpperBound, float boundsCeil, float boundsFloor)
