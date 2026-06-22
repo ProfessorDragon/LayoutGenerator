@@ -272,11 +272,14 @@ void LayoutGeneratorLayer::update(float dt)
         {
             placeFish(pd, fish);
 
+            m_shouldTapTimer = 0;
+
             // adjust tap balance
             if (fish->tap != PoolTap::ANY)
             {
                 m_shouldTap = fish->tap;
             }
+
             if (fish->tap == PoolTap::NO)
             {
                 m_tapBalance -= pd->state & PoolState::HOLD_FLYING ? 1.f : 2.f;
