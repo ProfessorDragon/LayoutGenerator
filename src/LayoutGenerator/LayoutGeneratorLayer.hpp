@@ -37,6 +37,8 @@ protected:
 
 	CCPoint m_lastPlacedFishPos;
 
+	GameObject *m_lastPlacedJumpIndicator = nullptr;
+
 	PoolState m_lastPlayerGamemode = PoolState::GAMEMODE_CUBE;
 
 	CCPoint m_lastSpikeBottomPos;

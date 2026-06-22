@@ -1,7 +1,9 @@
 # 1.2.2
 
+- Fixed jump indicators not being placed (again)
 - Fixed a bug where the player would hit black and spider rings late in robot
 - Fixed a bug where objects would not spawn when clicking with 'use player clicks' enabled
+- Fixed spider rings creating impossible sections when flying with 'use player clicks' enabled
 - Tweaked spike boundary generation:
     - A spike margin of 0 now accurately reflects the tightest possible boundary
     - Default spike margin set to 50

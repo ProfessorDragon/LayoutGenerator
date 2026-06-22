@@ -66,6 +66,7 @@ void LayoutGeneratorLayer::reset()
     m_isClickingLastFrame = false;
     m_lastPlacedFish = nullptr;
     m_lastPlacedFishPos = CCPoint{};
+    m_lastPlacedJumpIndicator = nullptr;
     m_lastPlayerGamemode = PoolState::GAMEMODE_CUBE;
     m_lastSpikeBottomPos = CCPoint{};
     m_lastSpikeTopPos = CCPoint{};
@@ -724,12 +725,10 @@ void LayoutGeneratorLayer::placeFish(PlayerData *pd, const PoolObject *fish, boo
     else if (fish->alignPlayer & PoolAlign::R)
         pos.x += playerRect.size.width / 2.f;
 
-    bool shouldPlace = false;
+    bool shouldPlace = true;
     GameObject *primaryObj = nullptr;
     if (fish->objectId >= 0)
     {
-        shouldPlace = true;
-
         // I TRIED THIS AND IT CRASHED THE GAME BUT NOW IT WORKS I GUESS???
         auto tempObj = GameObject::createWithKey(fish->objectId);
         if (pd->isUpsideDown())
@@ -799,18 +798,7 @@ void LayoutGeneratorLayer::placeFish(PlayerData *pd, const PoolObject *fish, boo
             if (auto ringObj = typeinfo_cast<RingObject *>(primaryObj))
             {
                 if (primaryObjRect.intersectsRect(playerRect))
-                {
-                    // yep this is all necessary
                     pd->player->addToTouchedRings(ringObj);
-                    if (mod->getSettingValue<bool>("use-player-clicks") &&
-                        pd->state & PoolState::FLYING &&
-                        fish->tags & PoolTag::RING_LATE)
-                    {
-                        if (pd->state & PoolState::GAMEMODE_SWING)
-                            pd->player->flipGravity(!pd->isUpsideDown(), true);
-                        pd->player->pushButton(PlayerButton::Jump);
-                    }
-                }
             }
 
             // enable preview for speed portals
@@ -836,7 +824,7 @@ void LayoutGeneratorLayer::placeFish(PlayerData *pd, const PoolObject *fish, boo
         // before it has the chance to place the block.
         (!mod->getSettingValue<bool>("use-player-clicks") || !(fish->tags & PoolTag::BLOCK)) &&
         // ensure the fish was actually placed
-        (fish->objectId < 0 || shouldPlace))
+        shouldPlace)
     {
         bool up = pd->isUpsideDown() != (bool)(fish->tags & PoolTag::GRAVITY);
         float yMin, yMax;
@@ -872,6 +860,19 @@ void LayoutGeneratorLayer::placeFish(PlayerData *pd, const PoolObject *fish, boo
         }
         if (didPlace && pd->state & PoolState::GAMEMODE_WAVE)
             placeDBlock(pos);
+    }
+
+    // force trigger rings when flying (AFTER spider ground)
+    if (mod->getSettingValue<bool>("use-player-clicks") &&
+        pd->state & PoolState::FLYING &&
+        fish->tags & PoolTag::RING_LATE &&
+        shouldPlace)
+    {
+        if (pd->state & PoolState::GAMEMODE_SWING)
+            pd->player->flipGravity(!pd->isUpsideDown(), true);
+        pd->player->pushButton(PlayerButton::Jump);
+        if (pd->state & PoolState::TAP_FLYING && m_lastPlacedJumpIndicator)
+            editor->removeObject(m_lastPlacedJumpIndicator, true);
     }
 
     // place label
@@ -948,6 +949,9 @@ void LayoutGeneratorLayer::placeJumpIndicator(CCPoint pos, int state)
     }
 
     obj->m_editorLayer = 1;
+
+    // i can't wait for this to cause some obscure crash
+    m_lastPlacedJumpIndicator = obj;
 }
 
 void LayoutGeneratorLayer::placeLabel(std::string text, CCPoint pos)
