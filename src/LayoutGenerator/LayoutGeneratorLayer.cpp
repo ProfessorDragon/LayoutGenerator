@@ -70,7 +70,6 @@ void LayoutGeneratorLayer::reset()
     m_lastSpikeBottomPos = CCPoint{};
     m_lastSpikeTopPos = CCPoint{};
     m_placeAgainTimer = -1;
-    m_placedJumpIndicatorLastFrame = false;
     m_playerTrail.clear();
     m_shouldTap = PoolTap::NO;
     m_shouldTapTimer = 0;
@@ -102,59 +101,68 @@ void LayoutGeneratorLayer::update(float dt)
     // playerdata
     auto mod = Mod::get();
     auto editor = LevelEditorLayer::get();
-    PlayerData *pd = new PlayerData();
-    pd->player = editor->m_player1;
+    auto pd = new PlayerData();
+    pd->setPlayer(editor->m_player1);
     if (!pd->player)
     {
         log::error("Player is null, aborting!");
         buildStop();
         return;
     }
-    pd->pos = pd->player->getPosition();
-    pd->velUnscaled = CCPoint{(float)pd->player->getCurrentXVelocity(), (float)pd->player->getYVelocity()};
     pd->velScaled = CCPoint{pd->velUnscaled.x * 60.f * dt, pd->velUnscaled.y * 60.f * dt};
-    pd->gamemode = getPlayerGamemode(pd->player);
-    pd->state = getPlayerState(pd->player);
 
     // paused
     if (!m_playerTrail.empty() && m_playerTrail.back().pos == pd->pos)
         return;
 
-    // playertraildata
-    PlayerTrailData trailLastFrame{};
-    if (!m_playerTrail.empty())
+    // trail
+    for (auto &trail : pd->player->m_fields->m_queuedTrail)
     {
-        trailLastFrame = m_playerTrail.back();
-        CCPoint trailPos(trailLastFrame.pos);
+        if (trail.pos.x > pd->pos.x)
+            continue;
+
+        trail.boundsCeil = m_boundsCeil;
+        trail.boundsFloor = m_boundsFloor;
 
         // fill in the gaps when a spider pad/ring is hit
-        const float spiderFillDistance = 30.f;
-        while (abs(trailPos.y - pd->pos.y) > spiderFillDistance)
+        if (!m_playerTrail.empty())
         {
-            trailPos.y += spiderFillDistance * (trailPos.y > pd->pos.y ? -1 : 1);
-            PlayerTrailData spiderFillTrail(trailLastFrame);
-            spiderFillTrail.pos = trailPos;
-            if (spiderFillTrail.state & PoolState::GROUNDED)
+            const float spiderFillDistance = 30.f;
+            CCPoint pos = trail.pos;
+            while (abs(pos.y - pd->pos.y) > spiderFillDistance)
             {
-                spiderFillTrail.state &= ~PoolState::GROUNDED;
-                spiderFillTrail.state |= PoolState::AIRBORNE;
-            }
-            m_playerTrail.push_back(spiderFillTrail);
-            if (mod->getSettingValue<bool>("debug-trail"))
-                placeDebugTrailClicking(trailPos, pd->isClicking());
-        }
-    }
-    m_playerTrail.push_back(PlayerTrailData{
-        pd->pos,
-        pd->velUnscaled,
-        pd->velScaled,
-        pd->player->getObjectRect().size,
-        pd->state,
-        m_boundsCeil,
-        m_boundsFloor});
+                pos.y += spiderFillDistance * (pos.y > pd->pos.y ? -1 : 1);
 
-    bool usePlayerClicks = mod->getSettingValue<bool>("use-player-clicks");
-    bool useRandomClicks = !usePlayerClicks;
+                PlayerTrailData spiderFillTrail(m_playerTrail.back());
+                spiderFillTrail.pos = pos;
+                if (spiderFillTrail.state & PoolState::GROUNDED)
+                {
+                    spiderFillTrail.state &= ~PoolState::GROUNDED;
+                    spiderFillTrail.state |= PoolState::AIRBORNE;
+                }
+
+                m_playerTrail.push_back(spiderFillTrail);
+
+                if (mod->getSettingValue<bool>("debug-trail"))
+                    placeDebugTrailClicking(spiderFillTrail.pos, spiderFillTrail.isClicking);
+            }
+        }
+
+        m_playerTrail.push_back(trail);
+
+        // debug trail
+        if (mod->getSettingValue<bool>("debug-trail"))
+            placeDebugTrailClicking(trail.pos, trail.isClicking);
+
+        // jump indicators v3
+        if (mod->getSettingValue<bool>("jump-indicators") && trail.makeJumpIndicator)
+            placeJumpIndicator(trail.pos, trail.state);
+    }
+    pd->player->m_fields->m_queuedTrail.clear();
+
+    // player isn't ready yet
+    if (m_playerTrail.empty())
+        return;
 
     // update gamemode bounds
     if (pd->gamemode != m_lastPlayerGamemode)
@@ -186,6 +194,8 @@ void LayoutGeneratorLayer::update(float dt)
 
     // place object on beat (spb = seconds per beat)
     float spb = 60.f / mod->getSettingValue<float>("bpm");
+    bool usePlayerClicks = mod->getSettingValue<bool>("use-player-clicks");
+    bool useRandomClicks = !usePlayerClicks;
     bool onBeat = false;
     bool onHalfBeat = false;
     if ((int)(m_elapsedTime / spb * 2.f) > m_halfBeatCount)
@@ -324,7 +334,7 @@ void LayoutGeneratorLayer::update(float dt)
                     {
                         log::debug("{} {} GROUNDED PLACEAGAIN", m_fishId, fish->name);
                         CCPoint pos = pd->pos;
-                        pos.y -= pd->player->getObjectRect().size.height / 2.f * pd->getSign();
+                        pos.y -= pd->getRectSize().height / 2.f * pd->getSign();
                         pos.y -= 15.f * pd->getSign();
                         if (!isOutOfBounds(pos.y, 30.f, pd->state & PoolState::HAS_BOUNDS))
                             editor->createObject(ObjectId::BLOCK, pos, true);
@@ -367,7 +377,7 @@ void LayoutGeneratorLayer::update(float dt)
 
     // spikes v2
     const float spikeMargin = mod->getSettingValue<float>("spike-margin");
-    const CCSize playerSize = pd->player->getObjectRect().size;
+    const CCSize playerSize = pd->getRectSize();
 
     // slightly larger than a spike hitbox, because just grazing the side of a spike kills you
     const CCSize spikeSize{8.f, 14.f};
@@ -558,31 +568,9 @@ void LayoutGeneratorLayer::update(float dt)
             m_hasTappedThisGamemode = true;
     }
 
-    // make debug trail
-    if (mod->getSettingValue<bool>("debug-trail"))
-    {
-        placeDebugTrailClicking(pd->pos, pd->isClicking());
-        if (fish)
-            placeDebugTrailBar(pd->pos);
-    }
-
-    // jump indicators v2
-    if (mod->getSettingValue<bool>("jump-indicators"))
-    {
-        if (auto myPlayer = static_cast<MyPlayerObject *>(pd->player))
-            if (myPlayer->m_fields->m_makeJumpIndicator > 0 &&
-                !m_placedJumpIndicatorLastFrame &&
-                // happened to me once during a ship to ufo transition
-                (fish == nullptr || !(fish->tags & PoolTag::RING)))
-            {
-                placeJumpIndicator(trailLastFrame.pos, trailLastFrame.state);
-                m_placedJumpIndicatorLastFrame = true;
-            }
-            else
-            {
-                m_placedJumpIndicatorLastFrame = false;
-            }
-    }
+    // mark that a fish was placed here
+    if (mod->getSettingValue<bool>("debug-trail") && fish)
+        placeDebugTrailBar(pd->pos);
 
     m_elapsedTime += dt;
     m_isClickingLastFrame = pd->isClicking();
@@ -938,8 +926,7 @@ void LayoutGeneratorLayer::placeDBlock(CCPoint pos)
 void LayoutGeneratorLayer::placeDebugTrailBar(CCPoint pos)
 {
     auto obj = LevelEditorLayer::get()->createObject(ObjectId::TRAIL_INDICATOR_PLACING, pos, true);
-    obj->updateCustomScaleX(2.0);
-    obj->updateCustomScaleY(0.5);
+    obj->updateCustomScaleY(0.25);
     obj->setRotation(90.f);
     obj->m_editorLayer = 1;
 }
@@ -950,8 +937,8 @@ void LayoutGeneratorLayer::placeDebugTrailClicking(CCPoint pos, bool isClicking)
         isClicking ? ObjectId::TRAIL_INDICATOR_CLICKING : ObjectId::TRAIL_INDICATOR,
         pos,
         true);
-    obj->updateCustomScaleX(0.5);
-    obj->updateCustomScaleY(0.5);
+    obj->updateCustomScaleX(0.25);
+    obj->updateCustomScaleY(0.25);
     obj->m_editorLayer = 1;
 }
 
@@ -1136,41 +1123,7 @@ GameObject *LayoutGeneratorLayer::getObjectNearPoint(CCPoint point, float radius
             return obj;
     }
 
-    // if the point might be offscreen, iterate through all of the objects.
-    // checking by section only works for things that are onscreen.
-    // the editor camera stops roughly around y = 1300.
-    // bool mayBeOffscreen = point.y > 1300.f;
-
-    // using editor->m_sections is more efficient but i think it causes crashes
-    // int xSectionCenter = std::max(0, (int)(point.x / 100));
-    // int ySectionCenter = std::max(0, (int)(point.y / 100));
-
-    // for (int xSection = xSectionCenter - 1; xSection <= xSectionCenter + 1; xSection++)
-    // {
-    //     for (int ySection = ySectionCenter - 1; ySection <= ySectionCenter + 1; ySection++)
-    //     {
-    //         if (xSection > editor->m_sections.size() - 1 || editor->m_sections[xSection] == nullptr)
-    //             continue;
-
-    //         auto &col = *editor->m_sections[xSection];
-    //         if (ySection > col.size() - 1 || col[ySection] == nullptr)
-    //             continue;
-
-    //         for (auto &obj : *col[ySection])
-    //         {
-    //             if (obj == nullptr)
-    //                 continue;
-    //             // WHY IS THIS A FIELD ROBTOP
-    //             if (!obj->m_isActivated)
-    //                 continue;
-    //             if (objectId >= 0 && obj->m_objectID != objectId)
-    //                 continue;
-    //             auto pos = obj->getPosition();
-    //             if (pow(pos.x - point.x, 2) + pow(pos.y - point.y, 2) <= pow(radius, 2))
-    //                 return obj;
-    //         }
-    //     }
-    // }
+    // editor->m_sections only works for onscreen objects and seems to contain garbage data sometimes
 
     return nullptr;
 }
@@ -1196,56 +1149,9 @@ CCRect LayoutGeneratorLayer::getObjectRect(GameObject *obj)
     }
 }
 
-PoolState LayoutGeneratorLayer::getPlayerGamemode(PlayerObject *player)
+bool LayoutGeneratorLayer::getIsBuilding()
 {
-    if (player->m_isShip)
-        return PoolState::GAMEMODE_SHIP;
-    else if (player->m_isBall)
-        return PoolState::GAMEMODE_BALL;
-    else if (player->m_isBird)
-        return PoolState::GAMEMODE_UFO;
-    else if (player->m_isDart)
-        return PoolState::GAMEMODE_WAVE;
-    else if (player->m_isRobot)
-        return PoolState::GAMEMODE_ROBOT;
-    else if (player->m_isSpider)
-        return PoolState::GAMEMODE_SPIDER;
-    else if (player->m_isSwing)
-        return PoolState::GAMEMODE_SWING;
-    else
-        return PoolState::GAMEMODE_CUBE;
-}
-
-int LayoutGeneratorLayer::getPlayerState(PlayerObject *player)
-{
-    int state = 0;
-
-    auto yv = player->getYVelocity() * (player->m_isUpsideDown ? -1 : 1);
-    if (yv > 1.f)
-        state |= PoolState::RISING;
-    else if (yv < -1.f)
-        state |= PoolState::FALLING;
-    if (abs(yv) < 3)
-        state |= PoolState::PEAKING;
-    state |= player->m_isUpsideDown ? PoolState::GRAVITY_REVERSE : PoolState::GRAVITY_NORMAL;
-    state |= player->m_vehicleSize < 1.f ? PoolState::SIZE_MINI : PoolState::SIZE_NORMAL;
-    if (player->m_playerSpeed == 0.7f)
-        state |= PoolState::SPEED_SLOW;
-    else if (player->m_playerSpeed == 0.9f)
-        state |= PoolState::SPEED_NORMAL;
-    else if (player->m_playerSpeed == 1.1f)
-        state |= PoolState::SPEED_2;
-    else if (player->m_playerSpeed == 1.3f)
-        state |= PoolState::SPEED_3;
-    else if (player->m_playerSpeed == 1.6f)
-        state |= PoolState::SPEED_4;
-    state |= getPlayerGamemode(player);
-
-    // ground detection (doesn't work for flying gamemodes)
-    if (state & PoolState::NOT_FLYING)
-        state |= player->m_isOnGround ? PoolState::GROUNDED : PoolState::AIRBORNE;
-
-    return state;
+    return m_isBuilding;
 }
 
 void LayoutGeneratorLayer::onBuildButton(CCObject *)

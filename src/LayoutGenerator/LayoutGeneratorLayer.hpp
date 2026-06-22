@@ -45,8 +45,6 @@ protected:
 
 	int m_placeAgainTimer = -1;
 
-	bool m_placedJumpIndicatorLastFrame = false;
-
 	std::vector<PlayerTrailData> m_playerTrail;
 
 	PoolTap m_shouldTap = PoolTap::NO;
@@ -104,11 +102,9 @@ protected:
 
 	CCRect getObjectRect(GameObject *obj);
 
-	PoolState getPlayerGamemode(PlayerObject *player);
-
-	int getPlayerState(PlayerObject *player);
-
 public:
+	bool getIsBuilding();
+
 	void onBuildButton(CCObject *);
 
 	void onSettingsButton(CCObject *);
