@@ -52,6 +52,7 @@ class $modify(MyPlayerObject, PlayerObject)
         // cube, ball, robot, spider
         else if (!m_isShip && !m_isDart)
         {
+            // TODO BROKEN AGAIN
             if (m_isOnGround && m_jumpBuffered && (!m_isRobot || m_stateRingJump) && !m_isDashing)
                 m_fields->m_makeJumpIndicator = true;
         }

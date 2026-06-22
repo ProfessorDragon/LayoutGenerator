@@ -359,6 +359,7 @@ void LayoutGeneratorLayer::update(float dt)
     m_playerTrail.back().fish = fish;
 
     // spikes v2
+    // TODO the intended gap for spider clicks is way too tight
     const float spikeMargin = mod->getSettingValue<float>("spike-margin");
     const CCSize playerSize = pd->getRectSize();
 
@@ -454,8 +455,8 @@ void LayoutGeneratorLayer::update(float dt)
             yMax -= jumpShrink;
     }
 
-    spikeBottom = spikeBottom && !(midTrail.state & PoolState::GRAVITY_NORMAL && midTrail.state & PoolState::GROUNDED);
-    spikeTop = spikeTop && !(midTrail.state & PoolState::GRAVITY_REVERSE && midTrail.state & PoolState::GROUNDED);
+    // spikeBottom = spikeBottom && !(midTrail.state & PoolState::GRAVITY_NORMAL && midTrail.state & PoolState::GROUNDED);
+    // spikeTop = spikeTop && !(midTrail.state & PoolState::GRAVITY_REVERSE && midTrail.state & PoolState::GROUNDED);
 
     placeSpikeBoundary(
         spikeBottom,
