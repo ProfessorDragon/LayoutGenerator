@@ -50,7 +50,7 @@
 			"name": "Spike margin",
 			"description": "Controls how close the spikes are to the player. Lower values make the gameplay less forgiving.",
 			"type": "float",
-			"default": 70.0,
+			"default": 50.0,
 			"min": 0.0,
 			"max": 150.0,
 			"control": {

@@ -220,6 +220,10 @@ void LayoutGeneratorLayer::update(float dt)
                 else
                     excludeTags |= PoolTag::RING;
             }
+
+            // stop placing block platform
+            if (m_lastPlacedFish && m_lastPlacedFish->keepActive)
+                m_lastPlacedFish = nullptr;
         }
         else
         {
@@ -238,7 +242,7 @@ void LayoutGeneratorLayer::update(float dt)
             requireTap |= PoolTap::NO | PoolTap::ANY;
     }
     // avoid reaching terminal velocity (-15.f)
-    else if (pd->velUnscaled.y * pd->getSign() < -10.f && onHalfBeat)
+    else if (pd->velUnscaled.y * pd->getSign() < -10.f && pd->state & PoolState::NO_BOUNDS && onHalfBeat)
     {
         shouldPlace = true;
         excludeTags |= PoolTag::FALL;
@@ -337,7 +341,9 @@ void LayoutGeneratorLayer::update(float dt)
             // make sure the player lets go of jump for at least 1 frame before tapping a ring or robot jump
             if (useRandomClicks && fish->tap & PoolTap::TAP_OR_HOLD && pd->isClicking())
             {
-                if (fish->tags & PoolTag::RING || (pd->state & PoolState::JUMP_NEEDS_BUFFER && fish->tags & PoolTag::BLOCK) || pd->player->m_isDashing)
+                if (fish->tags & PoolTag::RING ||
+                    (pd->state & PoolState::JUMP_NEEDS_BUFFER && fish->tags & PoolTag::BLOCK) ||
+                    pd->player->m_isDashing)
                 {
                     pd->player->releaseButton(PlayerButton::Jump);
                     m_shouldTapTimer = std::max(1, m_shouldTapTimer);
@@ -424,10 +430,11 @@ void LayoutGeneratorLayer::update(float dt)
         if (trail.pos.x < spikeScanLeft)
             continue;
 
+        // shrink the bounds a bit more in certain gamemodes where it's too easy
         float shrink = 0.f;
-        if (trail.state & PoolState::GAMEMODE_WAVE)
-            shrink = trail.state & PoolState::SIZE_MINI ? 15.f : 25.f;
-        else if (trail.state & PoolState::GAMEMODE_SHIP)
+        if (trail.state & PoolState::GAMEMODE_SHIP)
+            shrink = 10.f;
+        else if (trail.state & PoolState::GAMEMODE_WAVE && trail.state & PoolState::SIZE_NORMAL)
             shrink = 10.f;
         else if (trail.state & PoolState::GAMEMODE_UFO && trail.state & PoolState::SIZE_MINI)
             shrink = 10.f;
@@ -636,7 +643,11 @@ const PoolObject *LayoutGeneratorLayer::fishLegally(PlayerData *pd, float dt, in
                 return 0.f;
 
             // tapping a green orb that results in the player dying to the floor boundary
-            if (pd->state & PoolState::NO_BOUNDS && !pd->isUpsideDown() && pd->pos.y < m_boundsFloor + 135.f && fish->tags & PoolTag::FALL && fish->tags & PoolTag::GRAVITY)
+            if (pd->state & PoolState::NO_BOUNDS &&
+                !pd->isUpsideDown() &&
+                pd->pos.y < m_boundsFloor + 135.f &&
+                fish->tags & PoolTag::FALL &&
+                fish->tags & PoolTag::GRAVITY)
                 return 0.f;
 
             // changing gamemode when it hasn't tapped yet
@@ -819,7 +830,9 @@ void LayoutGeneratorLayer::placeFish(PlayerData *pd, const PoolObject *fish, boo
                 {
                     // yep this is all necessary
                     pd->player->addToTouchedRings(ringObj);
-                    if (mod->getSettingValue<bool>("use-player-clicks") && pd->state & PoolState::FLYING && fish->tags & PoolTag::RING_LATE)
+                    if (mod->getSettingValue<bool>("use-player-clicks") &&
+                        pd->state & PoolState::FLYING &&
+                        fish->tags & PoolTag::RING_LATE)
                     {
                         if (pd->state & PoolState::GAMEMODE_SWING)
                             pd->player->flipGravity(!pd->isUpsideDown(), true);
@@ -839,7 +852,8 @@ void LayoutGeneratorLayer::placeFish(PlayerData *pd, const PoolObject *fish, boo
             }
 
             // place d blocks in wave
-            if (fish->objectId == ObjectId::GAMEMODE_PORTAL_WAVE || (pd->state & PoolState::GAMEMODE_WAVE && fish->objectId == ObjectId::BLOCK))
+            if (fish->objectId == ObjectId::GAMEMODE_PORTAL_WAVE ||
+                (pd->state & PoolState::GAMEMODE_WAVE && fish->objectId == ObjectId::BLOCK))
                 placeDBlock(pos);
         }
     }
@@ -984,12 +998,6 @@ void LayoutGeneratorLayer::placeSpikeBoundary(
     float dedupDistance)
 {
     // wave (slopes) (unused)
-    // if (midState & PoolState::GAMEMODE_WAVE)
-    // {
-    //     int objectId = midState & PoolState::SIZE_MINI ? ObjectId::SLOPE_GENTLE : ObjectId::SLOPE;
-    //     if (
-    //         !isOutOfBounds(spikeBottomPos.y, 30.f, hasBounds) && getObjectNearPoint(spikeBottomPos, 30.f, ObjectId::SLOPE) == nullptr && getObjectNearPoint(spikeBottomPos, 30.f, ObjectId::SLOPE_GENTLE) == nullptr)
-    //     {
     //         auto bottomSpike = editor->createObject(objectId, spikeBottomPos, true);
     //         if (rightPos.y < midPos.y)
     //             bottomSpike->setRotation(90.f);
@@ -998,9 +1006,6 @@ void LayoutGeneratorLayer::placeSpikeBoundary(
     //             bottomSpike->setFlipX(true);
     //             bottomSpike->setRotation(-90.f);
     //         }
-    //     }
-    //     if (!isOutOfBounds(spikeTopPos.y, 30.f, hasBounds) && getObjectNearPoint(spikeTopPos, 30.f, ObjectId::SLOPE) == nullptr && getObjectNearPoint(spikeTopPos, 30.f, ObjectId::SLOPE_GENTLE) == nullptr)
-    //     {
     //         auto topSpike = editor->createObject(objectId, spikeTopPos, true);
     //         if (rightPos.y > midPos.y)
     //         {
@@ -1009,8 +1014,6 @@ void LayoutGeneratorLayer::placeSpikeBoundary(
     //         }
     //         else
     //             topSpike->setRotation(-90.f);
-    //     }
-    // }
 
     // player height + spike height - 1
     const float verticalFillDist = midTrail.rectSize.height + 11.f;
@@ -1281,7 +1284,8 @@ void LayoutGeneratorLayer::onSettingsButton(CCObject *)
     //             // obj->m_isDirty, obj->m_isDisabled, obj->m_isDisabled2, obj->m_isUnmodifiedPosDirty,
     //             // obj->m_isInvisible, obj->m_isInvisibleBlock);
     //             placeLabel(std::format("{},{}", i, j), CCPoint{pos.x, pos.y + 7.5f});
-    //             placeLabel(std::format("{},{}", std::max(0, (int)(pos.x / 100)), std::max(0, (int)(pos.y / 100))), CCPoint{pos.x, pos.y - 7.5f});
+    //             placeLabel(std::format("{},{}", std::max(0, (int)(pos.x / 100)), std::max(0, (int)(pos.y / 100))),
+    //                        CCPoint{pos.x, pos.y - 7.5f});
     //         }
     //     }
     // }
