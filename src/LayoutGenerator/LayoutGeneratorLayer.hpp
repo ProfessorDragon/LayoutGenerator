@@ -12,106 +12,106 @@ class PoolObject;
 class LayoutGeneratorLayer : public CCLayer
 {
 public:
-	static LayoutGeneratorLayer *create();
+    static LayoutGeneratorLayer *create();
 
 protected:
-	bool m_isBuilding = false;
+    bool m_isBuilding = false;
 
-	float m_boundsCeil = 0.f;
+    float m_boundsCeil = 0.f;
 
-	float m_boundsFloor = 0.f;
+    float m_boundsFloor = 0.f;
 
-	bool m_canPlaceNextFrame = false;
+    bool m_canPlaceNextFrame = false;
 
-	float m_elapsedTime = 0.f;
+    float m_elapsedTime = 0.f;
 
-	int m_fishId = 0;
+    int m_fishId = 0;
 
-	int m_halfBeatCount = 0;
+    int m_halfBeatCount = 0;
 
-	bool m_hasTappedThisGamemode = false;
+    bool m_hasTappedThisGamemode = false;
 
-	bool m_isClickingLastFrame = false;
+    bool m_isClickingLastFrame = false;
 
-	const PoolObject *m_lastPlacedFish = nullptr;
+    const PoolObject *m_lastPlacedFish = nullptr;
 
-	CCPoint m_lastPlacedFishPos;
+    CCPoint m_lastPlacedFishPos;
 
-	GameObject *m_lastPlacedJumpIndicator = nullptr;
+    GameObject *m_lastPlacedJumpIndicator = nullptr;
 
-	PoolState m_lastPlayerGamemode = PoolState::GAMEMODE_CUBE;
+    PoolState m_lastPlayerGamemode = PoolState::GAMEMODE_CUBE;
 
-	CCPoint m_lastSpikeBottomPos;
+    CCPoint m_lastSpikeBottomPos;
 
-	CCPoint m_lastSpikeTopPos;
+    CCPoint m_lastSpikeTopPos;
 
-	int m_placeAgainTimer = -1;
+    int m_placeAgainTimer = -1;
 
-	std::vector<PlayerTrailData> m_playerTrail;
+    std::vector<PlayerTrailData> m_playerTrail;
 
-	PoolTap m_shouldTap = PoolTap::NO;
+    PoolTap m_shouldTap = PoolTap::NO;
 
-	int m_shouldTapTimer = -1;
+    int m_shouldTapTimer = -1;
 
-	float m_tapBalance = 0.f;
+    float m_tapBalance = 0.f;
 
 protected:
-	bool init() override;
+    bool init() override;
 
-	void reset();
+    void reset();
 
-	// start building
-	void buildStart();
+    // start building
+    void buildStart();
 
-	// stop building (via the EditorUI, which later calls playtestStopped)
-	void buildStop();
+    // stop building (via the EditorUI, which later calls playtestStopped)
+    void buildStop();
 
-	void update(float dt) override;
+    void update(float dt) override;
 
-	const PoolObject *fishLegally(PlayerData *pd, float dt, int excludeTags, int requireTap);
+    const PoolObject *fishLegally(PlayerData *pd, float dt, int excludeTags, int requireTap);
 
-	void placeFish(PlayerData *pd, const PoolObject *fish, bool dedup = false, bool useLastY = false);
+    void placeFish(PlayerData *pd, const PoolObject *fish, bool dedup = false, bool useLastY = false);
 
-	void placeCreditText(std::string text, CCPoint pos);
+    void placeCreditText(std::string text, CCPoint pos);
 
-	void placeDBlock(CCPoint pos);
+    void placeDBlock(CCPoint pos);
 
-	void placeDebugTrailBar(CCPoint pos);
+    void placeDebugTrailBar(CCPoint pos);
 
-	void placeDebugTrailClicking(CCPoint pos, bool isClicking);
+    void placeDebugTrailClicking(CCPoint pos, bool isClicking);
 
-	void placeJumpIndicator(CCPoint pos, int state);
+    void placeJumpIndicator(CCPoint pos, int state);
 
-	void placeLabel(std::string text, CCPoint pos);
+    void placeLabel(std::string text, CCPoint pos);
 
-	void placeSpikeBoundary(
-		bool bottom,
-		CCPoint bottomPos,
-		bool top,
-		CCPoint topPos,
-		const PlayerTrailData &midTrail,
-		float dedupDistance);
+    void placeSpikeBoundary(
+        bool bottom,
+        CCPoint bottomPos,
+        bool top,
+        CCPoint topPos,
+        const PlayerTrailData &midTrail,
+        float dedupDistance);
 
-	void placeSpikeInBounds(CCPoint pos, const PlayerTrailData &trail, bool flipY);
+    void placeSpikeInBounds(CCPoint pos, const PlayerTrailData &trail, bool flipY);
 
-	bool doesRectInterfereWithTrail(CCRect rect, float playerX, bool isBlock, bool isMini);
+    bool doesRectInterfereWithTrail(CCRect rect, float playerX, bool isBlock, bool isMini);
 
-	void fillSpiderTrail(CCPoint pos);
+    void fillSpiderTrail(CCPoint pos);
 
-	bool isOutOfBounds(float y, float height, bool hasUpperBound, float boundsCeil, float boundsFloor);
+    bool isOutOfBounds(float y, float height, bool hasUpperBound, float boundsCeil, float boundsFloor);
 
-	bool isOutOfBounds(float y, float height, bool hasUpperBound);
+    bool isOutOfBounds(float y, float height, bool hasUpperBound);
 
-	GameObject *getObjectNearPoint(CCPoint point, float radius, int objectId = -1);
+    GameObject *getObjectNearPoint(CCPoint point, float radius, int objectId = -1);
 
-	CCRect getObjectRect(GameObject *obj);
+    CCRect getObjectRect(GameObject *obj);
 
 public:
-	bool getIsBuilding();
+    bool getIsBuilding();
 
-	void onBuildButton(CCObject *);
+    void onBuildButton(CCObject *);
 
-	void onSettingsButton(CCObject *);
+    void onSettingsButton(CCObject *);
 
-	void playtestStopped();
+    void playtestStopped();
 };
