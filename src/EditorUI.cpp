@@ -43,17 +43,4 @@ class $modify(EditorUI)
 
 		return true;
 	}
-
-	// playtest is started from the playtest button or build button
-	// void onPlaytest(CCObject *sender);
-
-	// playtest is stopped from the playtest button
-	// void onStopPlaytest(CCObject *sender);
-
-	// playtest is stopped from the playtest button, player death, or build button
-	void playtestStopped()
-	{
-		EditorUI::playtestStopped();
-		getBuilder()->playtestStopped();
-	}
 };

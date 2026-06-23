@@ -26,4 +26,12 @@ class $modify(MyLevelEditorLayer, LevelEditorLayer)
 
 		return true;
 	}
+
+	void onStopPlaytest()
+	{
+		LevelEditorLayer::onStopPlaytest();
+
+		if (auto builder = m_fields->m_builder)
+			builder->playtestStopped();
+	}
 };
