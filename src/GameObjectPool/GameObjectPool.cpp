@@ -1,4 +1,5 @@
 #include "GameObjectPool.hpp"
+#include "../PoolObject/PoolEnums.hpp"
 #include "../PoolObject/PoolObject.hpp"
 #include <random>
 
@@ -185,8 +186,8 @@ const std::vector<PoolObject> GameObjectPool::POOL = []()
     // breakable blocks
     pool.push_back(
         PoolObject("breakable block grounded")
-            .withTags(PoolTag::BREAKABLE_BLOCK)
-            .withShares(.01f)
+            .withTags(PoolTag::BREAKABLE_BLOCK | PoolTag::EXPERIMENTAL)
+            .withShares(verySmallShares)
             .withObjectId(143)
             .withStates(PoolState::GROUNDED)
             .withAlign(PoolAlign::CR, PoolAlign::CL)
@@ -194,8 +195,8 @@ const std::vector<PoolObject> GameObjectPool::POOL = []()
 
     pool.push_back(
         PoolObject("breakable block peaking")
-            .withTags(PoolTag::BREAKABLE_BLOCK)
-            .withShares(.01f)
+            .withTags(PoolTag::BREAKABLE_BLOCK | PoolTag::EXPERIMENTAL)
+            .withShares(verySmallShares)
             .withObjectId(143)
             .withStates(PoolState::AIRBORNE, PoolState::PEAKING)
             .withAlign(PoolAlign::CR, PoolAlign::CL)
