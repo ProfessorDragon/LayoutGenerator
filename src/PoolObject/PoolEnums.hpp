@@ -18,6 +18,7 @@ public:
     static const int TRAIL_INDICATOR_PLACING = 1767;
     static const int JUMP_INDICATOR_GROUNDED = 1768;
     static const int S_BLOCK = 1829;
+    static const int SPIDER_PAD = 3005;
 };
 
 enum PoolTag

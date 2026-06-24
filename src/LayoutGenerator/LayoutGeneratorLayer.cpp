@@ -220,8 +220,6 @@ void LayoutGeneratorLayer::update(float dt)
         {
             requireTap |= PoolTap::NO | PoolTap::ANY;
         }
-
-        // maybe add a failsafe in cube/robot for jumping into the floor in reverse gravity?
     }
 
     if (shouldPlace)
@@ -259,6 +257,17 @@ void LayoutGeneratorLayer::update(float dt)
     // continue placing a block platform
     if (m_lastPlacedFish && m_lastPlacedFish->keepActive)
         placeFish(pd, m_lastPlacedFish, !shouldPlace, true);
+
+    // cube/robot failsafe when jumping into the floor in reverse gravity
+    if (pd->isUpsideDown() &&
+        pd->state & PoolState::NO_BOUNDS &&
+        pd->state & PoolState::RISING &&
+        pd->pos.y < m_boundsFloor + 30.f)
+    {
+        log::debug("{} FLOOR FAILSAFE", m_fishId);
+        CCPoint pos{pd->pos.x, m_boundsFloor + 6.f};
+        editor->createObject(ObjectId::SPIDER_PAD, pos, true)->setFlipY(true);
+    }
 
     // place new object
     const PoolObject *fish = nullptr;
