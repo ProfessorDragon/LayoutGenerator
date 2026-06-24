@@ -8,7 +8,7 @@
 	},
 	"id": "profdragon.layoutgenerator",
 	"name": "Layout Generator",
-	"version": "v1.2.2",
+	"version": "v1.3.0",
 	"developer": "ProfDragon",
 	"description": "Procedurally generate Geometry Dash layouts",
 	"dependencies": {

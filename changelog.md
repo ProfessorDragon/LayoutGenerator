@@ -1,3 +1,11 @@
+# 1.3.0
+
+- Added a toggle for every object
+- Added the option to disable the spike boundary entirely
+- Added a failsafe so the player doesn't die by jumping into the floor in cube/robot with 'use player clicks' enabled
+- Fixed a bug where the layout would not stop generating on Mac
+
+
 # 1.2.2
 
 - Fixed jump indicators not being placed (again)
