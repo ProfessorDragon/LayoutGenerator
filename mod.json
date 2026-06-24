@@ -56,7 +56,7 @@
 			"name": "What to spawn",
 			"type": "title"
 		},
-		"test-custom-setting": {
+		"objects": {
 			"name": "Objects",
 			"type": "custom:objects",
 			"default": [

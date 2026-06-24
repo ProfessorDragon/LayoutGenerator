@@ -16,6 +16,26 @@ SettingNodeV3 *ObjectSettings::createNode(float width)
     return ObjectSettingsNode::create(std::static_pointer_cast<ObjectSettings>(shared_from_this()), width);
 }
 
+const std::vector<std::vector<int>> ObjectSettingsNode::OBJECT_ID_LAYOUT = {
+    // gamemode, speed, size portals
+    {12, 13, 47, 111, 660, 745, 1331, 1933, 10, 11, 99, 101},
+    // speed portals and pads
+    {200, 201, 202, 203, 1334, 35, 140, 1332, 67, 3005},
+    // rings
+    {36, 141, 1333, 84, 1022, 1330, 3004, 1704, 1751},
+};
+
+const std::unordered_set<int> ObjectSettingsNode::OBJECT_ID_WHITELISTABLE = []()
+{
+    std::unordered_set<int> w = {};
+
+    for (auto &row : OBJECT_ID_LAYOUT)
+        for (auto key : row)
+            w.insert(key);
+
+    return w;
+}();
+
 ObjectSettingsNode *ObjectSettingsNode::create(std::shared_ptr<ObjectSettings> setting, float width)
 {
     auto ret = new ObjectSettingsNode();
@@ -33,7 +53,7 @@ bool ObjectSettingsNode::init(std::shared_ptr<ObjectSettings> setting, float wid
     if (!SettingValueNodeV3::init(setting, width))
         return false;
 
-    const float height = 150.f;
+    const float height = 160.f;
 
     setContentSize({width, height});
 
@@ -50,17 +70,8 @@ bool ObjectSettingsNode::init(std::shared_ptr<ObjectSettings> setting, float wid
     m_toggleMenu->setLayout(ColumnLayout::create()
                                 ->setAxisReverse(true));
 
-    std::vector<std::vector<int>> rows = {};
-    // gamemode, speed, size portals
-    rows.push_back({12, 13, 47, 111, 660, 745, 1331, 1933, 10, 11, 99, 101});
-    // speed portals and pads
-    rows.push_back({200, 201, 202, 203, 1334, 35, 140, 1332, 67, 3005});
-    // rings
-    rows.push_back({36, 141, 1333, 84, 1022, 1330, 3004, 1704, 1751});
-
-    for (int i = 0; i < rows.size(); i++)
+    for (auto &row : OBJECT_ID_LAYOUT)
     {
-        auto &row = rows[i];
         auto menu = CCMenu::create();
         menu->setContentWidth(width);
         menu->setLayout(RowLayout::create()
@@ -74,9 +85,13 @@ bool ObjectSettingsNode::init(std::shared_ptr<ObjectSettings> setting, float wid
             auto offSprite = GameObject::createWithSpriteFrameName(frame);
             offSprite->setOpacity(90);
             offSprite->setScale(offSprite->getContentHeight() > 45.f ? .5f : .75f);
+            if (offSprite->getContentHeight() < 20.f)
+                offSprite->setContentHeight(20.f);
 
             auto onSprite = GameObject::createWithSpriteFrameName(frame);
             onSprite->setScale(onSprite->getContentHeight() > 45.f ? .5f : .75f);
+            if (onSprite->getContentHeight() < 20.f)
+                onSprite->setContentHeight(20.f);
 
             auto toggle = CCMenuItemToggler::create(
                 offSprite,
@@ -110,11 +125,10 @@ void ObjectSettingsNode::updateState(CCNode *invoker)
     auto shouldEnable = getSetting()->shouldEnable();
 
     auto value = getValue();
-    std::set<int> set(value.begin(), value.end());
 
     for (auto toggle : m_toggles)
     {
-        toggle->toggle(set.contains(toggle->getTag()));
+        toggle->toggle(value.contains(toggle->getTag()));
         toggle->setEnabled(shouldEnable);
         toggle->setCascadeColorEnabled(true);
         toggle->setCascadeOpacityEnabled(true);
@@ -126,14 +140,11 @@ void ObjectSettingsNode::updateState(CCNode *invoker)
 void ObjectSettingsNode::onToggle(CCObject *sender)
 {
     auto value = getValue();
-    std::set<int> set(value.begin(), value.end());
 
-    if (set.contains(sender->getTag()))
-        set.erase(sender->getTag());
+    if (value.contains(sender->getTag()))
+        value.erase(sender->getTag());
     else
-        set.insert(sender->getTag());
-
-    value = std::vector<int>(set.begin(), set.end());
+        value.insert(sender->getTag());
 
     setValue(value, static_cast<CCNode *>(sender));
 }

@@ -4,6 +4,7 @@
 #include "../PlayerData/PlayerData.hpp"
 #include "../PoolObject/PoolObject.hpp"
 #include "../PlayerObject.cpp"
+#include "../Settings/ObjectSettings.hpp"
 
 LayoutGeneratorLayer *LayoutGeneratorLayer::create()
 {
@@ -256,6 +257,10 @@ void LayoutGeneratorLayer::update(float dt)
         // only change gamemode, speed, and size on beat
         if (!onBeat)
             excludeTags |= PoolTag::GAMEMODE | PoolTag::SPEED | PoolTag::SIZE_;
+
+        // experimental gameplay
+        if (!mod->getSettingValue<bool>("experimental-gameplay"))
+            excludeTags |= PoolTag::EXPERIMENTAL;
 
         fish = fishLegally(pd, dt, excludeTags, requireTap);
         if (fish)
@@ -563,9 +568,7 @@ const PoolObject *LayoutGeneratorLayer::fishLegally(PlayerData *pd, float dt, in
     // auto followAWhileAgo = followFloats[(followIndex - 18) % followFloats.size()];
 
     auto mod = Mod::get();
-    // TODO custom object id blacklist
-    if (!mod->getSettingValue<bool>("experimental-gameplay"))
-        excludeTags |= PoolTag::EXPERIMENTAL;
+    auto objectWhitelist = mod->getSettingValue<std::unordered_set<int>>("objects");
 
     const int blindScanBehind = (int)(.3f / dt);
     bool isBlind = false;
@@ -587,6 +590,11 @@ const PoolObject *LayoutGeneratorLayer::fishLegally(PlayerData *pd, float dt, in
 
             // match state
             if (!fish->matchesPlayerState(pd->state))
+                return 0.f;
+
+            // object id whitelist
+            if (ObjectSettingsNode::OBJECT_ID_WHITELISTABLE.contains(fish->objectId) &&
+                !objectWhitelist.contains(fish->objectId))
                 return 0.f;
 
             // !! important things to never do !!
