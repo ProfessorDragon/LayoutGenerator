@@ -1,6 +1,12 @@
-// #include <Geode/Geode.hpp>
+#include <Geode/Geode.hpp>
+#include "Settings/ObjectSettings.hpp"
 
-// using namespace geode::prelude;
+using namespace geode::prelude;
+
+$on_mod(Loaded)
+{
+    Mod::get()->registerCustomSettingType("objects", &ObjectSettings::parse);
+}
 
 // $on_game(Loaded)
 // {

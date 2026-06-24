@@ -23,26 +23,6 @@ bool LayoutGeneratorLayer::init()
     if (!CCLayer::init())
         return false;
 
-    // parse hitboxes file
-    // auto path = geode::Mod::get()->getResourcesDir() / "hitboxes.json";
-    // std::ifstream file(path);
-    // if (!file.is_open())
-    // {
-    //     log::error("Failed to open file");
-    //     return false;
-    // }
-
-    // auto result = matjson::parse(file);
-    // if (result.isErr())
-    // {
-    //     log::error("Failed to read JSON");
-    //     return false;
-    // }
-
-    // auto json = result.unwrap();
-    // auto block = json["8"].asArray().unwrap();
-    // log::info("{}, {}", block[0].asString(), block[1].asString());
-
     // for debugging CCRects
     // log::debug("{} {} {} {}", rect.getMinX(), rect.getMinY(), rect.getMaxX(), rect.getMaxY());
 
@@ -369,123 +349,127 @@ void LayoutGeneratorLayer::update(float dt)
     m_playerTrail.back().fish = fish;
 
     // spikes v2
-    const float spikeMargin = mod->getSettingValue<float>("spike-margin");
-    const CCSize playerSize = pd->getRectSize();
-
-    // slightly larger than a spike hitbox, because just grazing the side of a spike kills you
-    // also make it a bit wider according to the spikeMargin
-    const CCSize spikeSize{8.f + spikeMargin / 2.f, 14.f};
-
-    // 30 units is the largest width that the player hitbox can ever be
-    const float spikeScanRight = pd->pos.x - (30.f - playerSize.width) / 2.f;
-
-    // place the right of the spike on the left of the player
-    const float spikeX = spikeScanRight - (playerSize.width + spikeSize.width) / 2.f;
-
-    // scan until the right of the player is past the left of the spike
-    const float spikeScanLeft = spikeX - (playerSize.width + spikeSize.width) / 2.f;
-
-    bool spikeBottom = false;
-    bool spikeTop = false;
-    float yMin = FLT_MAX;
-    float yMax = -FLT_MAX;
-    PlayerTrailData leftTrail{};
-    PlayerTrailData midTrail{};
-    bool closeTheSpiderGap = false;
-    float midMaxShrink = 0.0;
-    for (auto it = m_playerTrail.rbegin(); it != m_playerTrail.rend(); ++it)
+    if (mod->getSettingValue<bool>("spike-boundary-enabled"))
     {
-        auto trail = *it;
+        const float spikeMargin = mod->getSettingValue<float>("spike-margin");
+        const CCSize playerSize = pd->getRectSize();
 
-        if (trail.pos.x > spikeScanRight)
-            continue;
+        // slightly larger than a spike hitbox, because just grazing the side of a spike kills you
+        // also make it a bit wider according to the spikeMargin
+        const CCSize spikeSize{8.f + spikeMargin / 2.f, 14.f};
 
-        // scan range for gravity changes
-        if (trail.pos.x < pd->pos.x - pd->velUnscaled.x * 30.f)
-            break;
+        // 30 units is the largest width that the player hitbox can ever be
+        const float spikeScanRight = pd->pos.x - (30.f - playerSize.width) / 2.f;
 
-        if (
-            // airborne or flying or ball/spider
-            trail.state & (PoolState::AIRBORNE | PoolState::HAS_BOUNDS) ||
-            // black ring
-            trail.state & PoolState::GRAVITY_REVERSE && trail.velUnscaled.y >= 15.f ||
-            // spider
-            (trail.fish && trail.fish->tags & PoolTag::SPIDER))
-            spikeBottom = true;
-        if (
-            // airborne or flying or ball/spider
-            trail.state & (PoolState::AIRBORNE | PoolState::HAS_BOUNDS) ||
-            // black ring
-            trail.state & PoolState::GRAVITY_NORMAL && trail.velUnscaled.y <= -15.f ||
-            // spider
-            (trail.fish && trail.fish->tags & PoolTag::SPIDER))
-            spikeTop = true;
+        // place the right of the spike on the left of the player
+        const float spikeX = spikeScanRight - (playerSize.width + spikeSize.width) / 2.f;
 
-        // check for spider elements that would let the player slip through the gaps
-        if (trail.pos.x > pd->pos.x - 96.f && trail.pos.x < spikeX)
+        // scan until the right of the player is past the left of the spike
+        const float spikeScanLeft = spikeX - (playerSize.width + spikeSize.width) / 2.f;
+
+        bool spikeBottom = false;
+        bool spikeTop = false;
+        float yMin = FLT_MAX;
+        float yMax = -FLT_MAX;
+        PlayerTrailData leftTrail{};
+        PlayerTrailData midTrail{};
+        bool closeTheSpiderGap = false;
+        float midMaxShrink = 0.0;
+        for (auto it = m_playerTrail.rbegin(); it != m_playerTrail.rend(); ++it)
         {
-            if (trail.state & PoolState::GAMEMODE_SPIDER)
-                closeTheSpiderGap = true;
-            else if (trail.fish && trail.fish->tags & PoolTag::SPIDER)
-                closeTheSpiderGap = true;
+            auto trail = *it;
+
+            if (trail.pos.x > spikeScanRight)
+                continue;
+
+            // scan range for gravity changes
+            if (trail.pos.x < pd->pos.x - pd->velUnscaled.x * 30.f)
+                break;
+
+            if (
+                // airborne or flying or ball/spider
+                trail.state & (PoolState::AIRBORNE | PoolState::HAS_BOUNDS) ||
+                // black ring
+                trail.state & PoolState::GRAVITY_REVERSE && trail.velUnscaled.y >= 15.f ||
+                // spider
+                (trail.fish && trail.fish->tags & PoolTag::SPIDER))
+                spikeBottom = true;
+            if (
+                // airborne or flying or ball/spider
+                trail.state & (PoolState::AIRBORNE | PoolState::HAS_BOUNDS) ||
+                // black ring
+                trail.state & PoolState::GRAVITY_NORMAL && trail.velUnscaled.y <= -15.f ||
+                // spider
+                (trail.fish && trail.fish->tags & PoolTag::SPIDER))
+                spikeTop = true;
+
+            // check for spider elements that would let the player slip through the gaps
+            if (trail.pos.x > pd->pos.x - 96.f && trail.pos.x < spikeX)
+            {
+                if (trail.state & PoolState::GAMEMODE_SPIDER)
+                    closeTheSpiderGap = true;
+                else if (trail.fish && trail.fish->tags & PoolTag::SPIDER)
+                    closeTheSpiderGap = true;
+            }
+
+            // scan range for spike positioning
+            if (trail.pos.x < spikeScanLeft)
+                continue;
+
+            // shrink the bounds a bit more in certain gamemodes where it's too easy
+            float shrink = 0.f;
+            if (trail.state & PoolState::GAMEMODE_SHIP)
+                shrink = 10.f;
+            else if (trail.state & PoolState::GAMEMODE_WAVE && trail.state & PoolState::SIZE_NORMAL)
+                shrink = 10.f;
+            else if (trail.state & PoolState::GAMEMODE_UFO && trail.state & PoolState::SIZE_MINI)
+                shrink = 10.f;
+
+            float evilSpikeMargin = (trail.rectSize.height + spikeSize.height) / 2.f;
+            float shrunkSpikeMargin = evilSpikeMargin + std::max(spikeMargin - shrink, 0.f);
+            leftTrail = trail;
+            if (trail.pos.x > spikeX)
+            {
+                midTrail = trail;
+                midMaxShrink = shrunkSpikeMargin - evilSpikeMargin;
+            }
+
+            yMin = std::min(yMin, trail.pos.y - shrunkSpikeMargin);
+            yMax = std::max(yMax, trail.pos.y + shrunkSpikeMargin);
         }
 
-        // scan range for spike positioning
-        if (trail.pos.x < spikeScanLeft)
-            continue;
-
-        // shrink the bounds a bit more in certain gamemodes where it's too easy
-        float shrink = 0.f;
-        if (trail.state & PoolState::GAMEMODE_SHIP)
-            shrink = 10.f;
-        else if (trail.state & PoolState::GAMEMODE_WAVE && trail.state & PoolState::SIZE_NORMAL)
-            shrink = 10.f;
-        else if (trail.state & PoolState::GAMEMODE_UFO && trail.state & PoolState::SIZE_MINI)
-            shrink = 10.f;
-
-        float evilSpikeMargin = (trail.rectSize.height + spikeSize.height) / 2.f;
-        float shrunkSpikeMargin = evilSpikeMargin + std::max(spikeMargin - shrink, 0.f);
-        leftTrail = trail;
-        if (trail.pos.x > spikeX)
+        if (!(midTrail.state & PoolState::GAMEMODE_WAVE))
         {
-            midTrail = trail;
-            midMaxShrink = shrunkSpikeMargin - evilSpikeMargin;
+            float jumpShrink = std::min(midMaxShrink, midTrail.state & PoolState::SIZE_MINI ? 30.f : 15.f);
+            if (leftTrail.pos.y < midTrail.pos.y - 1.f &&
+                pd->pos.y < midTrail.pos.y - 1.f &&
+                midTrail.state & PoolState::GRAVITY_NORMAL)
+                yMin += jumpShrink;
+            if (leftTrail.pos.y > midTrail.pos.y + 1.f &&
+                pd->pos.y > midTrail.pos.y + 1.f &&
+                midTrail.state & PoolState::GRAVITY_REVERSE)
+                yMax -= jumpShrink;
         }
 
-        yMin = std::min(yMin, trail.pos.y - shrunkSpikeMargin);
-        yMax = std::max(yMax, trail.pos.y + shrunkSpikeMargin);
+        placeSpikeBoundary(
+            spikeBottom,
+            CCPoint{spikeX, yMin},
+            spikeTop,
+            CCPoint{spikeX, yMax},
+            midTrail,
+            spikeMargin <= 0.f
+                // zero spike margin will do this just for fun
+                ? 0.f
+                // otherwise...
+                : (closeTheSpiderGap
+                       // when performing a spider teleport, the player uses the inner rect for collision,
+                       // which is approximately 6 units wide. (except for wave, which is not handled.)
+                       // it does not change when mini.
+                       ? 6.f
+                       : playerSize.width) +
+                      // add one spike width minus xv
+                      6.f - pd->velScaled.x);
     }
-
-    if (!(midTrail.state & PoolState::GAMEMODE_WAVE))
-    {
-        float jumpShrink = std::min(midMaxShrink, midTrail.state & PoolState::SIZE_MINI ? 30.f : 15.f);
-        if (leftTrail.pos.y < midTrail.pos.y - 1.f && pd->pos.y < midTrail.pos.y - 1.f && midTrail.state & PoolState::GRAVITY_NORMAL)
-            yMin += jumpShrink;
-        if (leftTrail.pos.y > midTrail.pos.y + 1.f && pd->pos.y > midTrail.pos.y + 1.f && midTrail.state & PoolState::GRAVITY_REVERSE)
-            yMax -= jumpShrink;
-    }
-
-    // spikeBottom = spikeBottom && !(midTrail.state & PoolState::GRAVITY_NORMAL && midTrail.state & PoolState::GROUNDED);
-    // spikeTop = spikeTop && !(midTrail.state & PoolState::GRAVITY_REVERSE && midTrail.state & PoolState::GROUNDED);
-
-    placeSpikeBoundary(
-        spikeBottom,
-        CCPoint{spikeX, yMin},
-        spikeTop,
-        CCPoint{spikeX, yMax},
-        midTrail,
-        spikeMargin <= 0.f
-            // zero spike margin will do this just for fun
-            ? 0.f
-            // otherwise...
-            : (closeTheSpiderGap
-                   // when performing a spider teleport, the player uses the inner rect for collision,
-                   // which is approximately 6 units wide. (except for wave, which is not handled.)
-                   // it does not change when mini.
-                   ? 6.f
-                   : playerSize.width) +
-                  // add one spike width minus xv
-                  6.f - pd->velScaled.x);
 
     // jumping
     if (useRandomClicks)
@@ -579,17 +563,8 @@ const PoolObject *LayoutGeneratorLayer::fishLegally(PlayerData *pd, float dt, in
     // auto followAWhileAgo = followFloats[(followIndex - 18) % followFloats.size()];
 
     auto mod = Mod::get();
-    if (!mod->getSettingValue<bool>("tag-pad"))
-        excludeTags |= PoolTag::PAD;
-    if (!mod->getSettingValue<bool>("tag-ring"))
-        excludeTags |= PoolTag::RING;
-    if (!mod->getSettingValue<bool>("tag-size"))
-        excludeTags |= PoolTag::SIZE_;
-    if (!mod->getSettingValue<bool>("tag-speed"))
-        excludeTags |= PoolTag::SPEED;
-    if (!mod->getSettingValue<bool>("tag-gamemode"))
-        excludeTags |= PoolTag::GAMEMODE;
-    if (!mod->getSettingValue<bool>("tag-experimental"))
+    // TODO custom object id blacklist
+    if (!mod->getSettingValue<bool>("experimental-gameplay"))
         excludeTags |= PoolTag::EXPERIMENTAL;
 
     const int blindScanBehind = (int)(.3f / dt);

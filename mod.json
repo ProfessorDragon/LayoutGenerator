@@ -46,9 +46,30 @@
 				"slider": false
 			}
 		},
+		"use-player-clicks": {
+			"name": "Use player clicks",
+			"description": "If enabled, the gameplay will form around your clicks. If not, clicks will be inserted at random.",
+			"type": "bool",
+			"default": false
+		},
+		"title-generation": {
+			"name": "What to spawn",
+			"type": "title"
+		},
+		"test-custom-setting": {
+			"name": "Objects",
+			"type": "custom:objects",
+			"default": []
+		},
+		"spike-boundary-enabled": {
+			"name": "Spikes",
+			"type": "bool",
+			"default": true
+		},
 		"spike-margin": {
 			"name": "Spike margin",
 			"description": "Controls how close the spikes are to the player. Lower values make the gameplay less forgiving.",
+			"enable-if": "spike-boundary-enabled",
 			"type": "float",
 			"default": 50.0,
 			"min": 0.0,
@@ -59,55 +80,20 @@
 				"slider": false
 			}
 		},
-		"use-player-clicks": {
-			"name": "Use player clicks",
-			"description": "If enabled, the gameplay will form around your clicks. If not, clicks will be inserted at random.",
-			"type": "bool",
-			"default": false
-		},
 		"jump-indicators": {
-			"name": "Make jump indicators",
+			"name": "Jump indicators",
 			"type": "bool",
 			"default": true
+		},
+		"experimental-gameplay": {
+			"name": "Experimental gameplay",
+			"description": "Adds experimental gameplay elements such as late ring timings, jump pads while flying, and green gravity portals.",
+			"type": "bool",
+			"default": false
 		},
 		"debug-trail": {
 			"name": "Debug trail",
 			"description": "Leaves an object trail behind the player while generating. An X indicates the jump button is pressed.",
-			"type": "bool",
-			"default": false
-		},
-		"title-tags": {
-			"name": "What to spawn",
-			"type": "title"
-		},
-		"tag-gamemode": {
-			"name": "Gamemode portals",
-			"type": "bool",
-			"default": true
-		},
-		"tag-speed": {
-			"name": "Speed portals",
-			"type": "bool",
-			"default": true
-		},
-		"tag-size": {
-			"name": "Size portals",
-			"type": "bool",
-			"default": true
-		},
-		"tag-pad": {
-			"name": "Jump pads",
-			"type": "bool",
-			"default": true
-		},
-		"tag-ring": {
-			"name": "Rings",
-			"type": "bool",
-			"default": true
-		},
-		"tag-experimental": {
-			"name": "Experimental gameplay",
-			"description": "Adds experimental gameplay elements such as late ring timings, jump pads while flying, and green gravity portals.",
 			"type": "bool",
 			"default": false
 		}
