@@ -1,3 +1,10 @@
+# 1.3.1
+
+- Improved wave gameplay:
+    - Decreased probability of straight line sections
+    - Decreased penalty for flying away from center screen
+
+
 # 1.3.0
 
 - Added a toggle for every object
