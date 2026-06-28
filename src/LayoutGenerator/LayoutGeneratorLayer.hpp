@@ -100,7 +100,9 @@ protected:
 
     bool isOutOfBounds(float y, float height, bool hasUpperBound, float boundsCeil, float boundsFloor);
 
-    bool isOutOfBounds(float y, float height, bool hasUpperBound);
+    bool isOutOfBounds(float y, float height, PlayerData *pd);
+
+    bool isOutOfBounds(float y, float height, const PlayerTrailData &trail);
 
     GameObject *getObjectNearPoint(CCPoint point, float radius, int objectId = -1);
 

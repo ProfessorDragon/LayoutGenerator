@@ -112,6 +112,12 @@
 				"slider": false
 			}
 		},
+		"camera-free-mode": {
+			"name": "Free camera (experimental)",
+			"description": "Enables free mode for gamemode portals.",
+			"type": "bool",
+			"default": false
+		},
 		"jump-indicators": {
 			"name": "Jump indicators",
 			"type": "bool",

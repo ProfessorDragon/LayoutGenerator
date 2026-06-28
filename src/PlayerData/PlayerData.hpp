@@ -28,6 +28,8 @@ struct PlayerData
 
     void storeState();
 
+    bool isCameraFree() const;
+
     bool isClicking() const;
 
     bool isUpsideDown() const;
@@ -42,6 +44,8 @@ struct PlayerTrailData
     CCPoint pos;
 
     CCPoint velUnscaled;
+
+    bool isCameraFree = false;
 
     bool isClicking = false;
 
@@ -68,6 +72,7 @@ struct PlayerTrailData
         return PlayerTrailData{
             pd.pos,
             pd.velUnscaled,
+            pd.isCameraFree(),
             pd.isClicking(),
             pd.getRectSize(),
             pd.state};

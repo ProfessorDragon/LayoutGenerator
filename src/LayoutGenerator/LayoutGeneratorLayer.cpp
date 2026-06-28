@@ -129,13 +129,14 @@ void LayoutGeneratorLayer::update(float dt)
     // update gamemode bounds
     if (pd->gamemode != m_lastPlayerGamemode)
     {
-        if (pd->gamemode & PoolState::NO_BOUNDS)
+        if (pd->gamemode & PoolState::NO_BOUNDS || pd->isCameraFree())
         {
             m_boundsFloor = 90.f;
             m_boundsCeil = 1300.f;
         }
         else
         {
+            // GJBaseGameLayer::getGroundHeightForMode
             float height;
             if (pd->gamemode == PoolState::GAMEMODE_BALL)
                 height = 240.f;
@@ -143,13 +144,10 @@ void LayoutGeneratorLayer::update(float dt)
                 height = 270.f;
             else // ship and ufo
                 height = 300.f;
+            // dual height = 270
             m_boundsFloor = std::max(90.f, 30.f * std::ceil((pd->player->m_lastPortalPos.y - (height / 2.f + 30.f)) / 30.f));
             m_boundsCeil = m_boundsFloor + height;
         }
-
-        // i don't THINK this is required with jump indicators v2, but i haven't been able to test it
-        // if (pd->gamemode & PoolState::TAP_FLYING && pd->isClicking())
-        //     placeJumpIndicator(pd->pos, pd->state & PoolState::GRAVITY_REVERSE, true);
 
         m_hasTappedThisGamemode = false;
     }
@@ -239,9 +237,9 @@ void LayoutGeneratorLayer::update(float dt)
     if (m_lastPlacedFish && m_lastPlacedFish->keepActive)
         placeFish(pd, m_lastPlacedFish, !shouldPlace, true);
 
-    // cube/robot failsafe when jumping into the floor in reverse gravity
+    // failsafe when jumping into the floor in reverse gravity
     if (pd->isUpsideDown() &&
-        pd->state & PoolState::NO_BOUNDS &&
+        (pd->state & PoolState::NO_BOUNDS || pd->isCameraFree()) &&
         pd->state & PoolState::RISING &&
         pd->pos.y < m_boundsFloor + 30.f)
     {
@@ -314,7 +312,7 @@ void LayoutGeneratorLayer::update(float dt)
                         CCPoint pos = pd->pos;
                         pos.y -= pd->getRectSize().height / 2.f * pd->getSign();
                         pos.y -= 15.f * pd->getSign();
-                        if (!isOutOfBounds(pos.y, 30.f, pd->state & PoolState::HAS_BOUNDS))
+                        if (!isOutOfBounds(pos.y, 30.f, pd))
                             editor->createObject(ObjectId::BLOCK, pos, true);
                     }
                 }
@@ -609,7 +607,7 @@ const PoolObject *LayoutGeneratorLayer::fishLegally(PlayerData *pd, float dt, in
                 return 0.f;
 
             // tapping a green orb that results in the player dying to the floor boundary
-            if (pd->state & PoolState::NO_BOUNDS &&
+            if ((pd->state & PoolState::NO_BOUNDS || pd->isCameraFree()) &&
                 !pd->isUpsideDown() &&
                 pd->pos.y < m_boundsFloor + 135.f &&
                 fish->tags & PoolTag::FALL &&
@@ -627,7 +625,7 @@ const PoolObject *LayoutGeneratorLayer::fishLegally(PlayerData *pd, float dt, in
             if (m_tapBalance > 0 && fish->tap & (PoolTap::TAP_OR_HOLD | PoolTap::RANDOM))
                 weight = 1.f / m_tapBalance;
 
-            if (pd->state & PoolState::NO_BOUNDS)
+            if (pd->state & PoolState::NO_BOUNDS || pd->isCameraFree())
             {
                 // hitting the bounds kills you
                 if (pd->isUpsideDown())
@@ -747,7 +745,7 @@ void LayoutGeneratorLayer::placeFish(PlayerData *pd, const PoolObject *fish, boo
             pos.y = m_lastPlacedFishPos.y;
 
         // check if ok to place the object at the new position
-        if (isOutOfBounds(pos.y, tempObjRect.size.height, pd->state & PoolState::HAS_BOUNDS))
+        if (isOutOfBounds(pos.y, tempObjRect.size.height, pd))
             shouldPlace = false;
         else if (dedup && getObjectNearPoint(pos, 24.f, fish->objectId) != nullptr)
             shouldPlace = false;
@@ -795,6 +793,15 @@ void LayoutGeneratorLayer::placeFish(PlayerData *pd, const PoolObject *fish, boo
                     pd->player->addToTouchedRings(ringObj);
             }
 
+            // enable free mode for gamemode portals
+            if (fish->tags & PoolTag::GAMEMODE && mod->getSettingValue<bool>("camera-free-mode"))
+            {
+                if (auto effectObj = typeinfo_cast<EffectGameObject *>(primaryObj))
+                {
+                    effectObj->m_cameraIsFreeMode = true;
+                }
+            }
+
             // enable preview for speed portals
             if (fish->tags & PoolTag::SPEED)
             {
@@ -825,12 +832,16 @@ void LayoutGeneratorLayer::placeFish(PlayerData *pd, const PoolObject *fish, boo
         if (up)
         {
             yMin = pd->pos.y + (fish->tags & PoolTag::GRAVITY ? 30.f : 60.f);
-            yMax = pd->state & PoolState::HAS_BOUNDS ? m_boundsCeil : std::min(m_boundsCeil, yMin + 150.f);
+            yMax = pd->state & PoolState::HAS_BOUNDS && !pd->isCameraFree()
+                       ? m_boundsCeil
+                       : std::min(m_boundsCeil, yMin + 150.f);
         }
         else
         {
             yMax = pd->pos.y - (fish->tags & PoolTag::GRAVITY ? 30.f : 60.f);
-            yMin = pd->state & PoolState::HAS_BOUNDS ? m_boundsFloor : std::max(m_boundsFloor, yMax - 150.f);
+            yMin = pd->state & PoolState::HAS_BOUNDS && !pd->isCameraFree()
+                       ? m_boundsFloor
+                       : std::max(m_boundsFloor, yMax - 150.f);
         }
         CCPoint pos{pd->pos.x + pd->velScaled.x, utils::random::generate<float>(yMin, yMax)};
         auto tempObj = GameObject::createWithKey(ObjectId::BLOCK);
@@ -845,7 +856,7 @@ void LayoutGeneratorLayer::placeFish(PlayerData *pd, const PoolObject *fish, boo
                 didPlace = true;
                 break;
             }
-            if (pd->state & PoolState::HAS_BOUNDS)
+            if (pd->state & PoolState::HAS_BOUNDS && !pd->isCameraFree())
             {
                 didPlace = false;
                 break;
@@ -1038,7 +1049,7 @@ void LayoutGeneratorLayer::placeSpikeBoundary(
 
 void LayoutGeneratorLayer::placeSpikeInBounds(CCPoint pos, const PlayerTrailData &trail, bool flipY)
 {
-    if (!isOutOfBounds(pos.y, 12.f, trail.state & PoolState::HAS_BOUNDS, trail.boundsCeil, trail.boundsFloor))
+    if (!isOutOfBounds(pos.y, 12.f, trail))
     {
         if (auto spike = LevelEditorLayer::get()->createObject(ObjectId::SPIKE, pos, true))
         {
@@ -1110,9 +1121,14 @@ bool LayoutGeneratorLayer::isOutOfBounds(float y, float height, bool hasUpperBou
     return y + height / 2.f <= boundsFloor || (y - height / 2.f >= boundsCeil && hasUpperBound);
 }
 
-bool LayoutGeneratorLayer::isOutOfBounds(float y, float height, bool hasUpperBound)
+bool LayoutGeneratorLayer::isOutOfBounds(float y, float height, PlayerData *pd)
 {
-    return isOutOfBounds(y, height, hasUpperBound, m_boundsCeil, m_boundsFloor);
+    return isOutOfBounds(y, height, pd->state & PoolState::HAS_BOUNDS && !pd->isCameraFree(), m_boundsCeil, m_boundsFloor);
+}
+
+bool LayoutGeneratorLayer::isOutOfBounds(float y, float height, const PlayerTrailData &trail)
+{
+    return isOutOfBounds(y, height, trail.state & PoolState::HAS_BOUNDS && !trail.isCameraFree, trail.boundsCeil, trail.boundsFloor);
 }
 
 GameObject *LayoutGeneratorLayer::getObjectNearPoint(CCPoint point, float radius, int objectId)

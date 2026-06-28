@@ -67,6 +67,13 @@ void PlayerData::storeState()
         state |= player->m_isOnGround ? PoolState::GROUNDED : PoolState::AIRBORNE;
 }
 
+bool PlayerData::isCameraFree() const
+{
+    // see GJBaseGameLayer::updateCameraMode
+    // man i wish this was named
+    return player->m_gameLayer->m_gameState.m_unkBool8;
+}
+
 // m_jumpBuffered seems to be the same as m_holdingButtons[(int)PlayerButton::Jump],
 // but is false after hitting a spider pad/ring
 bool PlayerData::isClicking() const
