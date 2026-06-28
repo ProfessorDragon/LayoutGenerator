@@ -22,11 +22,15 @@ struct PlayerData
 
     int state = 0;
 
+    // state
+
     void setPlayer(PlayerObject *player);
 
     void storeGamemode();
 
     void storeState();
+
+    // helpers
 
     bool isCameraFree() const;
 
@@ -44,8 +48,6 @@ struct PlayerTrailData
     CCPoint pos;
 
     CCPoint velUnscaled;
-
-    bool isCameraFree = false;
 
     bool isClicking = false;
 
@@ -72,9 +74,16 @@ struct PlayerTrailData
         return PlayerTrailData{
             pd.pos,
             pd.velUnscaled,
-            pd.isCameraFree(),
             pd.isClicking(),
             pd.getRectSize(),
             pd.state};
     };
+
+    // helpers
+
+    bool isCameraFree() const;
+
+    bool isUpsideDown() const;
+
+    int getSign() const;
 };

@@ -51,9 +51,9 @@ enum PoolState
 
     GROUNDED = 1 << 0,
     AIRBORNE = 1 << 1,
-    // unused
-    // GROUNDED_FLOOR = 1 << 2,
-    // GROUNDED_CEILING = 1 << 3,
+
+    CAMERA_FREE = 1 << 2,
+    CAMERA_NOT_FREE = 1 << 3,
 
     RISING = 1 << 4,
     PEAKING = 1 << 5,

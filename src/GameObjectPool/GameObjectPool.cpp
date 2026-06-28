@@ -131,7 +131,7 @@ const std::vector<PoolObject> GameObjectPool::POOL = []()
             .withTags(PoolTag::BLOCK | PoolTag::JUMP)
             .withShares(blockShares)
             .withObjectId(-1)
-            .withStates(PoolState::GAMEMODE_SHIP)
+            .withStates(PoolState::GAMEMODE_SHIP, PoolState::CAMERA_NOT_FREE)
             .withTap(PoolTap::TOWARDS_CENTER));
 
     pool.push_back(
@@ -139,7 +139,7 @@ const std::vector<PoolObject> GameObjectPool::POOL = []()
             .withTags(PoolTag::BLOCK | PoolTag::JUMP)
             .withShares(blockShares / 2.f)
             .withObjectId(-1)
-            .withStates(PoolState::GAMEMODE_WAVE)
+            .withStates(PoolState::GAMEMODE_WAVE, PoolState::CAMERA_NOT_FREE)
             .withTap(PoolTap::TOWARDS_CENTER));
 
     pool.push_back(

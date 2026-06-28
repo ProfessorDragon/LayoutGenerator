@@ -47,6 +47,8 @@ void PlayerData::storeState()
 
     state |= isUpsideDown() ? PoolState::GRAVITY_REVERSE : PoolState::GRAVITY_NORMAL;
 
+    state |= isCameraFree() ? PoolState::CAMERA_FREE : PoolState::CAMERA_NOT_FREE;
+
     state |= player->m_vehicleSize < 1.f ? PoolState::SIZE_MINI : PoolState::SIZE_NORMAL;
 
     if (player->m_playerSpeed == 0.7f)
@@ -92,6 +94,21 @@ CCSize PlayerData::getRectSize() const
 }
 
 int PlayerData::getSign() const
+{
+    return isUpsideDown() ? -1 : 1;
+}
+
+bool PlayerTrailData::isCameraFree() const
+{
+    return state & PoolState::CAMERA_FREE;
+}
+
+bool PlayerTrailData::isUpsideDown() const
+{
+    return state & PoolState::GRAVITY_REVERSE;
+}
+
+int PlayerTrailData::getSign() const
 {
     return isUpsideDown() ? -1 : 1;
 }

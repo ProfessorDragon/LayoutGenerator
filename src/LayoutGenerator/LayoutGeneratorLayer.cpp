@@ -396,7 +396,7 @@ void LayoutGeneratorLayer::update(float dt)
                 // airborne or flying or ball/spider
                 trail.state & (PoolState::AIRBORNE | PoolState::HAS_BOUNDS) ||
                 // black ring
-                trail.state & PoolState::GRAVITY_REVERSE && trail.velUnscaled.y >= 15.f ||
+                (trail.isUpsideDown() && trail.velUnscaled.y >= 15.f) ||
                 // spider
                 (trail.fish && trail.fish->tags & PoolTag::SPIDER))
                 spikeBottom = true;
@@ -404,7 +404,7 @@ void LayoutGeneratorLayer::update(float dt)
                 // airborne or flying or ball/spider
                 trail.state & (PoolState::AIRBORNE | PoolState::HAS_BOUNDS) ||
                 // black ring
-                trail.state & PoolState::GRAVITY_NORMAL && trail.velUnscaled.y <= -15.f ||
+                (!trail.isUpsideDown() && trail.velUnscaled.y <= -15.f) ||
                 // spider
                 (trail.fish && trail.fish->tags & PoolTag::SPIDER))
                 spikeTop = true;
@@ -449,11 +449,11 @@ void LayoutGeneratorLayer::update(float dt)
             float jumpShrink = std::min(midMaxShrink, midTrail.state & PoolState::SIZE_MINI ? 30.f : 15.f);
             if (leftTrail.pos.y < midTrail.pos.y - 1.f &&
                 pd->pos.y < midTrail.pos.y - 1.f &&
-                midTrail.state & PoolState::GRAVITY_NORMAL)
+                !midTrail.isUpsideDown())
                 yMin += jumpShrink;
             if (leftTrail.pos.y > midTrail.pos.y + 1.f &&
                 pd->pos.y > midTrail.pos.y + 1.f &&
-                midTrail.state & PoolState::GRAVITY_REVERSE)
+                midTrail.isUpsideDown())
                 yMax -= jumpShrink;
         }
 
@@ -1130,7 +1130,7 @@ bool LayoutGeneratorLayer::isOutOfBounds(float y, float height, PlayerData *pd)
 
 bool LayoutGeneratorLayer::isOutOfBounds(float y, float height, const PlayerTrailData &trail)
 {
-    return isOutOfBounds(y, height, trail.state & PoolState::HAS_BOUNDS && !trail.isCameraFree, trail.boundsCeil, trail.boundsFloor);
+    return isOutOfBounds(y, height, trail.state & PoolState::HAS_BOUNDS && !trail.isCameraFree(), trail.boundsCeil, trail.boundsFloor);
 }
 
 GameObject *LayoutGeneratorLayer::getObjectNearPoint(CCPoint point, float radius, int objectId)
