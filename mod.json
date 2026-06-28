@@ -112,12 +112,6 @@
 				"slider": false
 			}
 		},
-		"camera-free-mode": {
-			"name": "Free camera (experimental)",
-			"description": "Enables free mode for gamemode portals.",
-			"type": "bool",
-			"default": false
-		},
 		"jump-indicators": {
 			"name": "Jump indicators",
 			"type": "bool",
@@ -126,6 +120,12 @@
 		"experimental-gameplay": {
 			"name": "Experimental gameplay",
 			"description": "Adds experimental gameplay elements such as late ring timings, jump pads while flying, and green gravity portals.",
+			"type": "bool",
+			"default": false
+		},
+		"camera-free-mode": {
+			"name": "Free camera (experimental)",
+			"description": "Enables free mode for gamemode portals.",
 			"type": "bool",
 			"default": false
 		},

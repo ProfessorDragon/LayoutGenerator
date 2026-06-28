@@ -222,7 +222,7 @@ void LayoutGeneratorLayer::update(float dt)
     else if (utils::random::chance(15.0 / 16.0) && onBeat)
     {
         shouldPlace = true;
-        if (useRandomClicks && utils::random::chance(0.5))
+        if (useRandomClicks && !(pd->state & PoolState::HOLD_FLYING) && utils::random::chance(0.5))
             requireTap |= PoolTap::TAP_OR_HOLD;
     }
     // half beat
@@ -277,7 +277,7 @@ void LayoutGeneratorLayer::update(float dt)
 
             if (fish->tap == PoolTap::NO)
             {
-                m_tapBalance -= pd->state & PoolState::HOLD_FLYING ? 1.f : 2.f;
+                m_tapBalance -= pd->state & PoolState::HOLD_FLYING ? .5f : 2.f;
             }
             else if (fish->tap == PoolTap::TAP)
             {

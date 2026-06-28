@@ -3,8 +3,8 @@
 - Improved wave gameplay:
     - Decreased probability of straight line sections
     - Decreased penalty for flying away from center screen
-- Added experimental camera free mode setting
-    - It's kinda bad
+- Added camera free mode setting
+    - It's kinda bad with ship and wave
 - Fixed an issue where objects get placed while the playtest is paused
 
 

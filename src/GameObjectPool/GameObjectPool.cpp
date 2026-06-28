@@ -119,30 +119,6 @@ const std::vector<PoolObject> GameObjectPool::POOL = []()
             .withTap(PoolTap::HOLD));
 
     pool.push_back(
-        PoolObject("flying random")
-            .withTags(PoolTag::BLOCK | PoolTag::JUMP)
-            .withShares(blockShares / 2.f)
-            .withObjectId(-1)
-            .withStates(PoolState::HOLD_FLYING)
-            .withTap(PoolTap::RANDOM));
-
-    pool.push_back(
-        PoolObject("ship towards center")
-            .withTags(PoolTag::BLOCK | PoolTag::JUMP)
-            .withShares(blockShares)
-            .withObjectId(-1)
-            .withStates(PoolState::GAMEMODE_SHIP, PoolState::CAMERA_NOT_FREE)
-            .withTap(PoolTap::TOWARDS_CENTER));
-
-    pool.push_back(
-        PoolObject("wave towards center")
-            .withTags(PoolTag::BLOCK | PoolTag::JUMP)
-            .withShares(blockShares / 2.f)
-            .withObjectId(-1)
-            .withStates(PoolState::GAMEMODE_WAVE, PoolState::CAMERA_NOT_FREE)
-            .withTap(PoolTap::TOWARDS_CENTER));
-
-    pool.push_back(
         PoolObject("flying fall")
             .withTags(PoolTag::BLOCK | PoolTag::FALL)
             .withShares(blockShares)
@@ -190,6 +166,38 @@ const std::vector<PoolObject> GameObjectPool::POOL = []()
             .withAlign(PoolAlign::TC, PoolAlign::BC)
             .withTap(PoolTap::HOLD)
             .withKeepActive(true));
+
+    pool.push_back(
+        PoolObject("ship random")
+            .withTags(PoolTag::BLOCK | PoolTag::JUMP)
+            .withShares(blockShares / 2.f)
+            .withObjectId(-1)
+            .withStates(PoolState::GAMEMODE_SHIP)
+            .withTap(PoolTap::RANDOM));
+
+    pool.push_back(
+        PoolObject("ship towards center")
+            .withTags(PoolTag::BLOCK | PoolTag::JUMP)
+            .withShares(blockShares)
+            .withObjectId(-1)
+            .withStates(PoolState::GAMEMODE_SHIP, PoolState::CAMERA_NOT_FREE)
+            .withTap(PoolTap::TOWARDS_CENTER));
+
+    pool.push_back(
+        PoolObject("wave random")
+            .withTags(PoolTag::BLOCK | PoolTag::JUMP)
+            .withShares(blockShares / 4.f)
+            .withObjectId(-1)
+            .withStates(PoolState::GAMEMODE_WAVE)
+            .withTap(PoolTap::RANDOM));
+
+    pool.push_back(
+        PoolObject("wave towards center")
+            .withTags(PoolTag::BLOCK | PoolTag::JUMP)
+            .withShares(blockShares / 2.f)
+            .withObjectId(-1)
+            .withStates(PoolState::GAMEMODE_WAVE, PoolState::CAMERA_NOT_FREE)
+            .withTap(PoolTap::TOWARDS_CENTER));
 
     // breakable blocks
     pool.push_back(
