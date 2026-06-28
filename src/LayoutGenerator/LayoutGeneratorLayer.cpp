@@ -52,6 +52,7 @@ void LayoutGeneratorLayer::reset()
     m_lastSpikeBottomPos = CCPoint{};
     m_lastSpikeTopPos = CCPoint{};
     m_placeAgainTimer = -1;
+    m_playerPosPauseCheck = CCPoint{};
     m_playerTrail.clear();
     m_shouldTap = PoolTap::NO;
     m_shouldTapTimer = 0;
@@ -94,8 +95,9 @@ void LayoutGeneratorLayer::update(float dt)
     pd->velScaled = CCPoint{pd->velUnscaled.x * 60.f * dt, pd->velUnscaled.y * 60.f * dt};
 
     // paused
-    if (!m_playerTrail.empty() && m_playerTrail.back().pos == pd->pos)
+    if (m_playerPosPauseCheck == pd->pos)
         return;
+    m_playerPosPauseCheck = pd->pos;
 
     // trail
     for (auto &trail : pd->player->m_fields->m_queuedTrail)

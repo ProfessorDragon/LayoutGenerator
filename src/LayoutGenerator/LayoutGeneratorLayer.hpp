@@ -47,6 +47,10 @@ protected:
 
     int m_placeAgainTimer = -1;
 
+    // stores the player position to check if the playtest is paused
+    // also has the benefit of not spamming objects in platformer
+    CCPoint m_playerPosPauseCheck;
+
     std::vector<PlayerTrailData> m_playerTrail;
 
     PoolTap m_shouldTap = PoolTap::NO;

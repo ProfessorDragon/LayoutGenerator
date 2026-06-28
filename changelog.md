@@ -1,8 +1,11 @@
-# 1.3.1
+# 1.4.0
 
 - Improved wave gameplay:
     - Decreased probability of straight line sections
     - Decreased penalty for flying away from center screen
+- Added experimental camera free mode setting
+    - It's kinda bad
+- Fixed an issue where objects get placed while the playtest is paused
 
 
 # 1.3.0
