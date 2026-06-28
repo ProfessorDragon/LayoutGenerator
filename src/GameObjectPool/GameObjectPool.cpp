@@ -127,11 +127,19 @@ const std::vector<PoolObject> GameObjectPool::POOL = []()
             .withTap(PoolTap::RANDOM));
 
     pool.push_back(
-        PoolObject("flying random towards center")
+        PoolObject("ship towards center")
             .withTags(PoolTag::BLOCK | PoolTag::JUMP)
             .withShares(blockShares)
             .withObjectId(-1)
-            .withStates(PoolState::HOLD_FLYING)
+            .withStates(PoolState::GAMEMODE_SHIP)
+            .withTap(PoolTap::TOWARDS_CENTER));
+
+    pool.push_back(
+        PoolObject("wave towards center")
+            .withTags(PoolTag::BLOCK | PoolTag::JUMP)
+            .withShares(blockShares / 2.f)
+            .withObjectId(-1)
+            .withStates(PoolState::GAMEMODE_WAVE)
             .withTap(PoolTap::TOWARDS_CENTER));
 
     pool.push_back(

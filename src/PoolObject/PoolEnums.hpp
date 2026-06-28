@@ -120,7 +120,7 @@ enum PoolTap
     HOLD_RANDOM = 1 << 4,    // hold for a random duration (robot)
     ANY = 1 << 5,            // doesn't matter if you tap, the player can't do anything
     RANDOM = 1 << 6,         // mash randomly
-    TOWARDS_CENTER = 1 << 7, // aim for middle of bounds
+    TOWARDS_CENTER = 1 << 7, // aim for middle of bounds by constantly monitoring the player's position
 
     TAP_OR_HOLD = TAP | TAP_DELAYED | HOLD | HOLD_RANDOM,
 };

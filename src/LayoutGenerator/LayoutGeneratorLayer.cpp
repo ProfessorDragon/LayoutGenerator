@@ -319,6 +319,7 @@ void LayoutGeneratorLayer::update(float dt)
                     }
                 }
             }
+            // PoolTap::TOWARDS_CENTER does not adjust tap balance
 
             // place a no-tap object after a spider tap
             if (fish->tags & PoolTag::SPIDER && utils::random::chance(0.5))
@@ -498,7 +499,7 @@ void LayoutGeneratorLayer::update(float dt)
         else if (m_shouldTap == PoolTap::TOWARDS_CENTER)
         {
             // aim for middle of bounds
-            auto mid = (m_boundsFloor + m_boundsCeil) / 2.f;
+            float mid = (m_boundsFloor + m_boundsCeil) / 2.f;
             if (pd->state & PoolState::GAMEMODE_SHIP)
                 mid -= pd->velScaled.y * 10.f;
             else if (pd->state & PoolState::GAMEMODE_WAVE)
@@ -506,7 +507,7 @@ void LayoutGeneratorLayer::update(float dt)
 
             bool push = pd->pos.y * pd->getSign() < mid * pd->getSign();
 
-            auto dist = abs(pd->pos.y - mid);
+            float dist = abs(pd->pos.y - mid);
             if (dist < 60 && utils::random::chance((1 - dist / 60.f) * .5f))
                 push = !push;
 
@@ -659,12 +660,13 @@ const PoolObject *LayoutGeneratorLayer::fishLegally(PlayerData *pd, float dt, in
             // aim for middle of bounds
             else
             {
-                auto mid = (m_boundsFloor + m_boundsCeil) / 2.f;
+                float mid = (m_boundsFloor + m_boundsCeil) / 2.f;
                 if (pd->state & PoolState::GAMEMODE_SHIP)
                     mid -= pd->velScaled.y * 10.f;
 
                 // maximum distance is 135
-                auto dist = abs(pd->pos.y - mid);
+                float dist = abs(pd->pos.y - mid);
+                float penalty = 1 - dist / (pd->state & (PoolState::GAMEMODE_SHIP | PoolState::GAMEMODE_UFO) ? 30.f : 125.f);
 
                 // below middle, relative to gravity
                 if (pd->pos.y * pd->getSign() < mid * pd->getSign())
@@ -673,10 +675,10 @@ const PoolObject *LayoutGeneratorLayer::fishLegally(PlayerData *pd, float dt, in
                     {
                         if ((fish->tags & PoolTag::FALL && !(fish->tags & PoolTag::GRAVITY)) ||
                             (fish->tags & PoolTag::JUMP && fish->tags & PoolTag::GRAVITY))
-                            weight *= 1 - dist / 30.f;
+                            weight *= penalty;
                     }
                     else if (fish->tags & PoolTag::FALL)
-                        weight *= 1 - dist / 125.f;
+                        weight *= penalty;
                 }
                 else
                 {
@@ -684,10 +686,10 @@ const PoolObject *LayoutGeneratorLayer::fishLegally(PlayerData *pd, float dt, in
                     {
                         if ((fish->tags & PoolTag::JUMP && !(fish->tags & PoolTag::GRAVITY)) ||
                             (fish->tags & PoolTag::FALL && fish->tags & PoolTag::GRAVITY))
-                            weight *= 1 - dist / 30.f;
+                            weight *= penalty;
                     }
                     else if (fish->tags & PoolTag::JUMP)
-                        weight *= 1 - dist / 125.f;
+                        weight *= penalty;
                 }
             }
 
