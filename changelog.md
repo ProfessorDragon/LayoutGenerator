@@ -1,3 +1,8 @@
+# 1.4.1
+
+- Camera zoom is accounted for when calculating gamemode bounds
+
+
 # 1.4.0
 
 - Improved wave gameplay:

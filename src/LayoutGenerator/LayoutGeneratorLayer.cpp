@@ -42,6 +42,8 @@ void LayoutGeneratorLayer::reset()
     m_boundsFloor = 90.f;
     m_canPlaceNextFrame = true;
     m_elapsedTime = LevelEditorLayer::get()->m_levelSettings->m_songOffset + .133f; // offset for better sync
+    // m_fishId = 0; // no need to reset
+    m_gamemodePortalY = 0.f;
     m_halfBeatCount = (int)(m_elapsedTime / (60.f / mod->getSettingValue<float>("bpm")) * 2.f);
     m_hasTappedThisGamemode = false;
     m_isClickingLastFrame = false;
@@ -128,30 +130,38 @@ void LayoutGeneratorLayer::update(float dt)
     if (m_playerTrail.empty())
         return;
 
-    // update gamemode bounds
+    // gamemode changed
     if (pd->gamemode != m_lastPlayerGamemode)
     {
-        if (pd->gamemode & PoolState::NO_BOUNDS || pd->isCameraFree())
-        {
-            m_boundsFloor = 90.f;
-            m_boundsCeil = 1300.f;
-        }
-        else
-        {
-            // GJBaseGameLayer::getGroundHeightForMode
-            float height;
-            if (pd->gamemode == PoolState::GAMEMODE_BALL)
-                height = 240.f;
-            else if (pd->gamemode == PoolState::GAMEMODE_SPIDER)
-                height = 270.f;
-            else // ship and ufo
-                height = 300.f;
-            // dual height = 270
-            m_boundsFloor = std::max(90.f, 30.f * std::ceil((pd->player->m_lastPortalPos.y - (height / 2.f + 30.f)) / 30.f));
-            m_boundsCeil = m_boundsFloor + height;
-        }
-
+        m_gamemodePortalY = pd->player->m_lastPortalPos.y;
         m_hasTappedThisGamemode = false;
+    }
+
+    // calculate bounds
+    if (pd->gamemode & PoolState::NO_BOUNDS || pd->isCameraFree())
+    {
+        m_boundsFloor = 90.f;
+        m_boundsCeil = 1300.f;
+    }
+    else
+    {
+        // GJBaseGameLayer::getGroundHeightForMode
+        float height;
+        if (pd->gamemode == PoolState::GAMEMODE_BALL)
+            height = 240.f;
+        else if (pd->gamemode == PoolState::GAMEMODE_SPIDER)
+            height = 270.f;
+        else // ship and ufo
+            height = 300.f;
+        // dual height = 270
+
+        float roundMe = m_gamemodePortalY - height / 2.f - 30.f;
+        float mid = std::max(90.f, std::ceil(roundMe / 30.f) * 30.f) + height / 2.f;
+
+        // i dont know the official gd method for applying zoom but this seems to work
+        float zoom = editor->m_gameState.m_cameraZoom;
+        m_boundsFloor = mid - height / 2.f / zoom;
+        m_boundsCeil = mid + height / 2.f / zoom;
     }
 
     // place object on beat (spb = seconds per beat)
@@ -664,9 +674,10 @@ const PoolObject *LayoutGeneratorLayer::fishLegally(PlayerData *pd, float dt, in
                 if (pd->state & PoolState::GAMEMODE_SHIP)
                     mid -= pd->velScaled.y * 10.f;
 
-                // maximum distance is 135
                 float dist = abs(pd->pos.y - mid);
-                float penalty = 1 - dist / (pd->state & (PoolState::GAMEMODE_SHIP | PoolState::GAMEMODE_UFO) ? 30.f : 125.f);
+                float penalty = 1 - dist /
+                                        ((m_boundsCeil - m_boundsFloor) *
+                                         (pd->state & (PoolState::GAMEMODE_SHIP | PoolState::GAMEMODE_UFO) ? .1f : .5f));
 
                 // below middle, relative to gravity
                 if (pd->pos.y * pd->getSign() < mid * pd->getSign())

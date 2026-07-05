@@ -27,6 +27,8 @@ protected:
 
     int m_fishId = 0;
 
+    float m_gamemodePortalY = 0.f;
+
     int m_halfBeatCount = 0;
 
     bool m_hasTappedThisGamemode = false;
