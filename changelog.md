@@ -1,6 +1,7 @@
 # 1.4.1
 
 - Camera zoom is accounted for when calculating gamemode bounds
+- Added a warning popup when starting the generator in platformer mode
 
 
 # 1.4.0

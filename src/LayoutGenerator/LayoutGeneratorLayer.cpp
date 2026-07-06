@@ -1198,7 +1198,26 @@ void LayoutGeneratorLayer::onBuildButton(CCObject *)
     if (m_isBuilding)
         buildStop();
     else
-        buildStart();
+    {
+        if (LevelEditorLayer::get()->m_isPlatformer && !m_hasShownPlatformerWarning)
+        {
+            geode::createQuickPopup(
+                "Warning",
+                "Layout Generator is not designed for platformer mode. It may produce unexpected results.",
+                "Abort",
+                "Continue",
+                [this](FLAlertLayer *popup, bool btn2)
+                {
+                    if (btn2)
+                    {
+                        m_hasShownPlatformerWarning = true;
+                        buildStart();
+                    }
+                });
+        }
+        else
+            buildStart();
+    }
 }
 
 void LayoutGeneratorLayer::onSettingsButton(CCObject *)

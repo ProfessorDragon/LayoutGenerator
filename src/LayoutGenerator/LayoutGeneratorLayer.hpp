@@ -31,6 +31,9 @@ protected:
 
     int m_halfBeatCount = 0;
 
+    // show a warning once per session when generating in platformer mode
+    bool m_hasShownPlatformerWarning = false;
+
     bool m_hasTappedThisGamemode = false;
 
     bool m_isClickingLastFrame = false;
