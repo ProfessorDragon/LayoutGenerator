@@ -52,6 +52,8 @@ protected:
 
     int m_placeAgainTimer = -1;
 
+    std::unordered_set<int> m_placedObjectUniqueIds;
+
     // stores the player position to check if the playtest is paused
     // also has the benefit of not spamming objects in platformer
     CCPoint m_playerPosPauseCheck;
@@ -76,6 +78,9 @@ protected:
     void buildStop();
 
     void update(float dt) override;
+
+    // creates an object in the LevelEditorLayer and adds it to m_placedObjectUniqueIds
+    GameObject *createObject(int key, CCPoint position);
 
     const PoolObject *fishLegally(PlayerData *pd, float dt, int excludeTags, int requireTap);
 

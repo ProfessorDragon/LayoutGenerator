@@ -54,6 +54,7 @@ void LayoutGeneratorLayer::reset()
     m_lastSpikeBottomPos = CCPoint{};
     m_lastSpikeTopPos = CCPoint{};
     m_placeAgainTimer = -1;
+    m_placedObjectUniqueIds.clear();
     m_playerPosPauseCheck = CCPoint{};
     m_playerTrail.clear();
     m_shouldTap = PoolTap::NO;
@@ -257,7 +258,7 @@ void LayoutGeneratorLayer::update(float dt)
     {
         log::debug("{} FLOOR FAILSAFE", m_fishId);
         CCPoint pos{pd->pos.x, m_boundsFloor + 6.f};
-        editor->createObject(ObjectId::SPIDER_PAD, pos, true)->setFlipY(true);
+        createObject(ObjectId::SPIDER_PAD, pos)->setFlipY(true);
     }
 
     // place new object
@@ -325,7 +326,7 @@ void LayoutGeneratorLayer::update(float dt)
                         pos.y -= pd->getRectSize().height / 2.f * pd->getSign();
                         pos.y -= 15.f * pd->getSign();
                         if (!isOutOfBounds(pos.y, 30.f, pd))
-                            editor->createObject(ObjectId::BLOCK, pos, true);
+                            createObject(ObjectId::BLOCK, pos);
                     }
                 }
             }
@@ -571,6 +572,20 @@ void LayoutGeneratorLayer::update(float dt)
     m_lastPlayerGamemode = pd->gamemode;
 }
 
+GameObject *LayoutGeneratorLayer::createObject(int key, CCPoint position)
+{
+    if (auto editor = LevelEditorLayer::get())
+    {
+        if (auto object = editor->createObject(key, position, true))
+        {
+            m_placedObjectUniqueIds.insert(object->m_uniqueID);
+            return object;
+        }
+    }
+
+    return nullptr;
+}
+
 const PoolObject *LayoutGeneratorLayer::fishLegally(PlayerData *pd, float dt, int excludeTags, int requireTap)
 {
     // playerFollowFloats usage
@@ -776,7 +791,7 @@ void LayoutGeneratorLayer::placeFish(PlayerData *pd, const PoolObject *fish, boo
 
         if (shouldPlace)
         {
-            primaryObj = editor->createObject(fish->objectId, pos, true);
+            primaryObj = createObject(fish->objectId, pos);
             if (pd->isUpsideDown())
             {
                 if (fish->canFlip())
@@ -865,7 +880,7 @@ void LayoutGeneratorLayer::placeFish(PlayerData *pd, const PoolObject *fish, boo
             tempObjRect.origin += pos;
             if (!doesRectInterfereWithTrail(tempObjRect, pd->pos.x, true, pd->state & PoolState::SIZE_MINI))
             {
-                editor->createObject(ObjectId::BLOCK, pos, true)->setFlipY(up);
+                createObject(ObjectId::BLOCK, pos)->setFlipY(up);
                 didPlace = true;
                 break;
             }
@@ -912,7 +927,7 @@ void LayoutGeneratorLayer::placeFish(PlayerData *pd, const PoolObject *fish, boo
 
 void LayoutGeneratorLayer::placeCreditText(std::string text, CCPoint pos)
 {
-    auto textObj = static_cast<TextGameObject *>(LevelEditorLayer::get()->createObject(ObjectId::TEXT, pos, true));
+    auto textObj = static_cast<TextGameObject *>(createObject(ObjectId::TEXT, pos));
     textObj->updateCustomScaleX(0.5);
     textObj->updateCustomScaleY(0.5);
     textObj->m_zLayer = ZLayer::T2;
@@ -921,14 +936,14 @@ void LayoutGeneratorLayer::placeCreditText(std::string text, CCPoint pos)
 
 void LayoutGeneratorLayer::placeDBlock(CCPoint pos)
 {
-    auto obj = LevelEditorLayer::get()->createObject(ObjectId::D_BLOCK, pos, true);
+    auto obj = createObject(ObjectId::D_BLOCK, pos);
     obj->updateCustomScaleX(3.0);
     obj->updateCustomScaleY(3.0);
 }
 
 void LayoutGeneratorLayer::placeDebugTrailBar(CCPoint pos)
 {
-    auto obj = LevelEditorLayer::get()->createObject(ObjectId::TRAIL_INDICATOR_PLACING, pos, true);
+    auto obj = createObject(ObjectId::TRAIL_INDICATOR_PLACING, pos);
     obj->updateCustomScaleY(0.25);
     obj->setRotation(90.f);
     obj->m_editorLayer = 1;
@@ -936,10 +951,9 @@ void LayoutGeneratorLayer::placeDebugTrailBar(CCPoint pos)
 
 void LayoutGeneratorLayer::placeDebugTrailClicking(CCPoint pos, bool isClicking)
 {
-    auto obj = LevelEditorLayer::get()->createObject(
+    auto obj = createObject(
         isClicking ? ObjectId::TRAIL_INDICATOR_CLICKING : ObjectId::TRAIL_INDICATOR,
-        pos,
-        true);
+        pos);
     obj->updateCustomScaleX(0.25);
     obj->updateCustomScaleY(0.25);
     obj->m_editorLayer = 1;
@@ -951,10 +965,9 @@ void LayoutGeneratorLayer::placeJumpIndicator(CCPoint pos, int state)
     bool isMini = state & PoolState::SIZE_MINI;
     int sign = state & PoolState::GRAVITY_REVERSE ? -1 : 1;
 
-    auto obj = LevelEditorLayer::get()->createObject(
+    auto obj = createObject(
         isFlying ? ObjectId::JUMP_INDICATOR_FLYING : ObjectId::JUMP_INDICATOR_GROUNDED,
-        pos + CCPoint{0.f, isFlying || isMini ? 0.f : -5.f * sign},
-        true);
+        pos + CCPoint{0.f, isFlying || isMini ? 0.f : -5.f * sign});
 
     if (isFlying)
     {
@@ -974,7 +987,7 @@ void LayoutGeneratorLayer::placeJumpIndicator(CCPoint pos, int state)
 
 void LayoutGeneratorLayer::placeLabel(std::string text, CCPoint pos)
 {
-    auto textObj = static_cast<TextGameObject *>(LevelEditorLayer::get()->createObject(ObjectId::TEXT, pos, true));
+    auto textObj = static_cast<TextGameObject *>(createObject(ObjectId::TEXT, pos));
     textObj->updateCustomScaleX(0.25);
     textObj->updateCustomScaleY(0.25);
     textObj->m_editorLayer = 1;
@@ -991,7 +1004,7 @@ void LayoutGeneratorLayer::placeSpikeBoundary(
     float dedupDistance)
 {
     // wave (slopes) (unused)
-    //         auto bottomSpike = editor->createObject(objectId, spikeBottomPos, true);
+    //         auto bottomSpike = createObject(objectId, spikeBottomPos);
     //         if (rightPos.y < midPos.y)
     //             bottomSpike->setRotation(90.f);
     //         else
@@ -999,7 +1012,7 @@ void LayoutGeneratorLayer::placeSpikeBoundary(
     //             bottomSpike->setFlipX(true);
     //             bottomSpike->setRotation(-90.f);
     //         }
-    //         auto topSpike = editor->createObject(objectId, spikeTopPos, true);
+    //         auto topSpike = createObject(objectId, spikeTopPos);
     //         if (rightPos.y > midPos.y)
     //         {
     //             topSpike->setFlipY(true);
@@ -1064,7 +1077,7 @@ void LayoutGeneratorLayer::placeSpikeInBounds(CCPoint pos, const PlayerTrailData
 {
     if (!isOutOfBounds(pos.y, 12.f, trail))
     {
-        if (auto spike = LevelEditorLayer::get()->createObject(ObjectId::SPIKE, pos, true))
+        if (auto spike = createObject(ObjectId::SPIKE, pos))
         {
             spike->setFlipY(flipY);
         }
@@ -1260,4 +1273,22 @@ void LayoutGeneratorLayer::onSettingsButton(CCObject *)
 void LayoutGeneratorLayer::playtestStopped()
 {
     m_isBuilding = false;
+
+    // add undo steps for creating and selecting the generated objects
+    auto editor = LevelEditorLayer::get();
+    auto undo = CCArray::create();
+    for (auto object : CCArrayExt<GameObject *>(editor->m_objects))
+    {
+        if (object && m_placedObjectUniqueIds.contains(object->m_uniqueID))
+            undo->addObject(object);
+    }
+    if (undo->count() > 0)
+    {
+        editor->m_undoObjects->addObject(UndoObject::createWithArray(undo, UndoCommand::Paste));
+        editor->m_undoObjects->addObject(UndoObject::createWithArray(undo, UndoCommand::Select));
+        editor->m_editorUI->updateButtons();
+    }
+
+    // just to be safe
+    m_placedObjectUniqueIds.clear();
 }
