@@ -3,6 +3,7 @@
 - Generated objects can be selected and deleted by pressing the undo button
 - Camera zoom is accounted for when calculating gamemode bounds
 - Added a warning popup when starting the generator in platformer mode
+- Fixed crash when turning around in platformer mode
 
 
 # 1.4.0

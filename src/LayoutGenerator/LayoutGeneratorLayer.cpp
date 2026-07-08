@@ -455,37 +455,40 @@ void LayoutGeneratorLayer::update(float dt)
             yMax = std::max(yMax, trail.pos.y + shrunkSpikeMargin);
         }
 
-        if (!(midTrail.state & PoolState::GAMEMODE_WAVE))
+        if (yMin < FLT_MAX)
         {
-            float jumpShrink = std::min(midMaxShrink, midTrail.state & PoolState::SIZE_MINI ? 30.f : 15.f);
-            if (leftTrail.pos.y < midTrail.pos.y - 1.f &&
-                pd->pos.y < midTrail.pos.y - 1.f &&
-                !midTrail.isUpsideDown())
-                yMin += jumpShrink;
-            if (leftTrail.pos.y > midTrail.pos.y + 1.f &&
-                pd->pos.y > midTrail.pos.y + 1.f &&
-                midTrail.isUpsideDown())
-                yMax -= jumpShrink;
-        }
+            if (!(midTrail.state & PoolState::GAMEMODE_WAVE))
+            {
+                float jumpShrink = std::min(midMaxShrink, midTrail.state & PoolState::SIZE_MINI ? 30.f : 15.f);
+                if (leftTrail.pos.y < midTrail.pos.y - 1.f &&
+                    pd->pos.y < midTrail.pos.y - 1.f &&
+                    !midTrail.isUpsideDown())
+                    yMin += jumpShrink;
+                if (leftTrail.pos.y > midTrail.pos.y + 1.f &&
+                    pd->pos.y > midTrail.pos.y + 1.f &&
+                    midTrail.isUpsideDown())
+                    yMax -= jumpShrink;
+            }
 
-        placeSpikeBoundary(
-            spikeBottom,
-            CCPoint{spikeX, yMin},
-            spikeTop,
-            CCPoint{spikeX, yMax},
-            midTrail,
-            spikeMargin <= 0.f
-                // zero spike margin will do this just for fun
-                ? 0.f
-                // otherwise...
-                : (closeTheSpiderGap
-                       // when performing a spider teleport, the player uses the inner rect for collision,
-                       // which is approximately 6 units wide. (except for wave, which is not handled.)
-                       // it does not change when mini.
-                       ? 6.f
-                       : playerSize.width) +
-                      // add one spike width minus xv
-                      6.f - pd->velScaled.x);
+            placeSpikeBoundary(
+                spikeBottom,
+                CCPoint{spikeX, yMin},
+                spikeTop,
+                CCPoint{spikeX, yMax},
+                midTrail,
+                spikeMargin <= 0.f
+                    // zero spike margin will do this just for fun
+                    ? 0.f
+                    // otherwise...
+                    : (closeTheSpiderGap
+                           // when performing a spider teleport, the player uses the inner rect for collision,
+                           // which is approximately 6 units wide. (except for wave, which is not handled.)
+                           // it does not change when mini.
+                           ? 6.f
+                           : playerSize.width) +
+                          // add one spike width minus xv
+                          6.f - pd->velScaled.x);
+        }
     }
 
     // jumping
