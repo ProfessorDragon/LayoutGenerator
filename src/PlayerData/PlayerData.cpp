@@ -49,7 +49,12 @@ void PlayerData::storeState()
 
     state |= isCameraFree() ? PoolState::CAMERA_FREE : PoolState::CAMERA_NOT_FREE;
 
-    state |= player->m_vehicleSize < 1.f ? PoolState::SIZE_MINI : PoolState::SIZE_NORMAL;
+    if (player->m_vehicleSize < 1.f)
+        state |= PoolState::SIZE_MINI;
+    else if (player->m_vehicleSize > 1.f)
+        state |= PoolState::SIZE_BIG;
+    else
+        state |= PoolState::SIZE_NORMAL;
 
     if (player->m_playerSpeed == 0.7f)
         state |= PoolState::SPEED_SLOW;

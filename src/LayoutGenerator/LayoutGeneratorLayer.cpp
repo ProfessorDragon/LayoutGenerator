@@ -437,7 +437,7 @@ void LayoutGeneratorLayer::update(float dt)
             float shrink = 0.f;
             if (trail.state & PoolState::GAMEMODE_SHIP)
                 shrink = 10.f;
-            else if (trail.state & PoolState::GAMEMODE_WAVE && trail.state & PoolState::SIZE_NORMAL)
+            else if (trail.state & PoolState::GAMEMODE_WAVE && trail.state & (PoolState::SIZE_NORMAL | PoolState::SIZE_BIG))
                 shrink = 10.f;
             else if (trail.state & PoolState::GAMEMODE_UFO && trail.state & PoolState::SIZE_MINI)
                 shrink = 10.f;
@@ -965,12 +965,12 @@ void LayoutGeneratorLayer::placeDebugTrailClicking(CCPoint pos, bool isClicking)
 void LayoutGeneratorLayer::placeJumpIndicator(CCPoint pos, int state)
 {
     bool isFlying = state & PoolState::FLYING;
-    bool isMini = state & PoolState::SIZE_MINI;
     int sign = state & PoolState::GRAVITY_REVERSE ? -1 : 1;
 
-    auto obj = createObject(
-        isFlying ? ObjectId::JUMP_INDICATOR_FLYING : ObjectId::JUMP_INDICATOR_GROUNDED,
-        pos + CCPoint{0.f, isFlying || isMini ? 0.f : -5.f * sign});
+    if (!isFlying && !(state & PoolState::SIZE_MINI))
+        pos.y -= 5.f * sign;
+
+    auto obj = createObject(isFlying ? ObjectId::JUMP_INDICATOR_FLYING : ObjectId::JUMP_INDICATOR_GROUNDED, pos);
 
     if (isFlying)
     {

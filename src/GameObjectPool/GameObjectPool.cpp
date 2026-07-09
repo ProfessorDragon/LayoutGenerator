@@ -94,7 +94,7 @@ const std::vector<PoolObject> GameObjectPool::POOL = []()
     pool.push_back(
         PoolObject("block platform")
             .withTags(PoolTag::BLOCK)
-            .withShares(blockShares)
+            .withShares(blockShares / 2.f)
             .withObjectId(ObjectId::BLOCK)
             .withStates(PoolState::AIRBORNE, PoolState::FALLING | PoolState::PEAKING)
             .withAlign(PoolAlign::BC, PoolAlign::TC)
@@ -151,7 +151,8 @@ const std::vector<PoolObject> GameObjectPool::POOL = []()
             .withShares(2.5f)
             .withObjectId(ObjectId::BLOCK)
             // bugged specifically with mini wave, hence size_normal|not_wave
-            .withStates(PoolState::HOLD_FLYING, PoolState::FALLING | PoolState::PEAKING, PoolState::SIZE_NORMAL | PoolState::NOT_WAVE)
+            .withStates(PoolState::HOLD_FLYING, PoolState::FALLING | PoolState::PEAKING,
+                        PoolState::SIZE_NORMAL | PoolState::SIZE_BIG | PoolState::NOT_WAVE)
             .withAlign(PoolAlign::BC, PoolAlign::TC)
             .withTap(PoolTap::NO)
             .withKeepActive(true));
@@ -162,7 +163,8 @@ const std::vector<PoolObject> GameObjectPool::POOL = []()
             // this appears a lot more than hold flying platform and i don't know why
             // .withShares(2.5f)
             .withObjectId(ObjectId::BLOCK)
-            .withStates(PoolState::HOLD_FLYING, PoolState::RISING | PoolState::PEAKING, PoolState::SIZE_NORMAL | PoolState::NOT_WAVE)
+            .withStates(PoolState::HOLD_FLYING, PoolState::RISING | PoolState::PEAKING,
+                        PoolState::SIZE_NORMAL | PoolState::SIZE_BIG | PoolState::NOT_WAVE)
             .withAlign(PoolAlign::TC, PoolAlign::BC)
             .withTap(PoolTap::HOLD)
             .withKeepActive(true));
