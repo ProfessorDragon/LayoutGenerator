@@ -539,15 +539,26 @@ const std::vector<PoolObject> GameObjectPool::POOL = []()
     }
 
     // size portals
-    for (int i = 0; i < 2; i++)
+    // i dunno if this is hacky to use isModLoaded during mod load,
+    // but it works
+    const bool hasBigPortal = Loader::get()->isModLoaded("profdragon.bigportal");
+    if (hasBigPortal)
+        log::info("Loading with Big Portal support");
+    for (int i = 0; i < (hasBigPortal ? 3 : 2); i++)
     {
-        int state = i == 0 ? PoolState::SIZE_MINI : PoolState::SIZE_NORMAL;
+        int state = 0;
+        if (i != 0)
+            state |= PoolState::SIZE_NORMAL;
+        if (i != 1)
+            state |= PoolState::SIZE_MINI;
+        if (i != 2)
+            state |= PoolState::SIZE_BIG;
 
         pool.push_back(
             PoolObject("size portal grounded")
                 .withTags(PoolTag::PORTAL | PoolTag::SIZE_)
                 .withShares(2.5f)
-                .withObjectId(99 + i * 2)
+                .withObjectId(i == 2 ? 8161 : 99 + i * 2)
                 .withStates(PoolState::GROUNDED, state)
                 .withAlign(PoolAlign::BR, PoolAlign::BL)
                 .withTap(PoolTap::ANY));
@@ -556,7 +567,7 @@ const std::vector<PoolObject> GameObjectPool::POOL = []()
             PoolObject("size portal falling")
                 .withTags(PoolTag::PORTAL | PoolTag::SIZE_)
                 .withShares(2.5f)
-                .withObjectId(99 + i * 2)
+                .withObjectId(i == 2 ? 8161 : 99 + i * 2)
                 .withStates(PoolState::AIRBORNE, PoolState::FALLING, state)
                 .withAlign(PoolAlign::BC, PoolAlign::TC)
                 .withRotation(90.f)
@@ -566,7 +577,7 @@ const std::vector<PoolObject> GameObjectPool::POOL = []()
             PoolObject("size portal flying")
                 .withTags(PoolTag::PORTAL | PoolTag::SIZE_)
                 .withShares(5.f)
-                .withObjectId(99 + i * 2)
+                .withObjectId(i == 2 ? 8161 : 99 + i * 2)
                 .withStates(PoolState::FLYING, PoolState::NOT_WAVE, state)
                 .withAlign(PoolAlign::CR, PoolAlign::CL)
                 .withTap(PoolTap::ANY));
@@ -576,7 +587,7 @@ const std::vector<PoolObject> GameObjectPool::POOL = []()
             PoolObject("size portal wave")
                 .withTags(PoolTag::PORTAL | PoolTag::SIZE_)
                 .withShares(12.5f)
-                .withObjectId(99 + i * 2)
+                .withObjectId(i == 2 ? 8161 : 99 + i * 2)
                 .withStates(PoolState::GAMEMODE_WAVE, state)
                 .withAlign(PoolAlign::CR, PoolAlign::CL)
                 .withTap(PoolTap::ANY));

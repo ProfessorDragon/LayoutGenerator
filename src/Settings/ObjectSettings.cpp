@@ -18,7 +18,7 @@ SettingNodeV3 *ObjectSettings::createNode(float width)
 
 const std::vector<std::vector<int>> ObjectSettingsNode::OBJECT_ID_LAYOUT = {
     // gamemode, speed, size portals
-    {12, 13, 47, 111, 660, 745, 1331, 1933, 10, 11, 99, 101},
+    {12, 13, 47, 111, 660, 745, 1331, 1933, 10, 11, 99, 101, 8161},
     // speed portals and pads
     {200, 201, 202, 203, 1334, 35, 140, 1332, 67, 3005},
     // rings
@@ -81,6 +81,8 @@ bool ObjectSettingsNode::init(std::shared_ptr<ObjectSettings> setting, float wid
         {
             auto key = row[j];
             auto frame = ObjectToolbox::sharedState()->intKeyToFrame(key);
+            if (std::string_view(frame).empty())
+                continue;
 
             auto offSprite = GameObject::createWithSpriteFrameName(frame);
             offSprite->setOpacity(90);
