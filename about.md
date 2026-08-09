@@ -19,3 +19,4 @@ Quality gameplay not guaranteed.
 ## Known issues
 
 - The player can die in wave by hitting a gamemode portal when sandwiched between the level bounds and another block.
+- Falling into a mini portal while big can result in an impossibly placed portal.

@@ -87,11 +87,20 @@ void GameObjectPool::generatePool(std::unordered_map<std::string, uint32_t> cust
                        .withAlign(PoolAlign::BC, PoolAlign::TC)
                        .withTap(PoolTap::NO));
 
-    pool.push_back(PoolObject("block platform")
+    pool.push_back(PoolObject("block platform peaking")
+                       .withTags(PoolTag::BLOCK)
+                       .withShares(BLOCK_SHARES / 4.f)
+                       .withObjectId(ObjectId::BLOCK)
+                       .withStates(PoolState::AIRBORNE, PoolState::PEAKING)
+                       .withAlign(PoolAlign::BC, PoolAlign::TC)
+                       .withTap(PoolTap::NO)
+                       .withKeepActive(true));
+
+    pool.push_back(PoolObject("block platform falling")
                        .withTags(PoolTag::BLOCK)
                        .withShares(BLOCK_SHARES / 2.f)
                        .withObjectId(ObjectId::BLOCK)
-                       .withStates(PoolState::AIRBORNE, PoolState::FALLING | PoolState::PEAKING)
+                       .withStates(PoolState::AIRBORNE, PoolState::FALLING)
                        .withAlign(PoolAlign::BC, PoolAlign::TC)
                        .withTap(PoolTap::NO)
                        .withKeepActive(true));
@@ -189,16 +198,16 @@ void GameObjectPool::generatePool(std::unordered_map<std::string, uint32_t> cust
 
     // breakable blocks
     pool.push_back(PoolObject("breakable block grounded")
-                       .withTags(PoolTag::BREAKABLE_BLOCK | PoolTag::EXPERIMENTAL)
-                       .withShares(VERY_SMALL_SHARES)
+                       .withTags(PoolTag::BREAKABLE_BLOCK)
+                       .withShares(VERY_SMALL_SHARES * 2.f)
                        .withObjectId(143)
                        .withStates(PoolState::GROUNDED)
                        .withAlign(PoolAlign::CR, PoolAlign::CL)
                        .withTap(PoolTap::NO));
 
     pool.push_back(PoolObject("breakable block peaking")
-                       .withTags(PoolTag::BREAKABLE_BLOCK | PoolTag::EXPERIMENTAL)
-                       .withShares(VERY_SMALL_SHARES)
+                       .withTags(PoolTag::BREAKABLE_BLOCK)
+                       .withShares(VERY_SMALL_SHARES * 2.f)
                        .withObjectId(143)
                        .withStates(PoolState::AIRBORNE, PoolState::PEAKING)
                        .withAlign(PoolAlign::CR, PoolAlign::CL)

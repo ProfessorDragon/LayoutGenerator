@@ -28,7 +28,7 @@ void ObjectSettingsNode::generateLayout(std::unordered_map<std::string, uint32_t
         // speed portals and pads
         {200, 201, 202, 203, 1334, 35, 140, 1332, 67, 3005},
         // rings
-        {36, 141, 1333, 84, 1022, 1330, 3004, 1704, 1751},
+        {36, 141, 1333, 84, 1022, 1330, 3004, 1704, 1751, 143},
     };
 
     // custom objects
