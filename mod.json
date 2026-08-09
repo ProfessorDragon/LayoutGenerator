@@ -1,5 +1,5 @@
 {
-	"geode": "5.7.1",
+	"geode": "5.8.2",
 	"gd": {
 		"win": "2.2081",
 		"android": "2.2081",
@@ -12,7 +12,11 @@
 	"developer": "ProfDragon",
 	"description": "Procedurally generate Geometry Dash layouts",
 	"dependencies": {
-		"geode.node-ids": ">=v1.23.3"
+		"geode.node-ids": ">=v1.23.3",
+		"smjs.object-collab": {
+			"version": ">=0.5.3-beta.1",
+			"required": false
+		}
 	},
 	"issues": {
 		"info": "Message me on Discord @professordragon, or sumbit an issue on GitHub.",
@@ -90,8 +94,7 @@
 				1751,
 				1933,
 				3004,
-				3005,
-				8161
+				3005
 			]
 		},
 		"spike-boundary-enabled": {

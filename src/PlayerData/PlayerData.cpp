@@ -77,8 +77,8 @@ void PlayerData::storeState()
 bool PlayerData::isCameraFree() const
 {
     // see GJBaseGameLayer::updateCameraMode
-    // man i wish this was named
-    return player->m_gameLayer->m_gameState.m_unkBool8;
+    // (previously named m_unkBool8)
+    return player->m_gameLayer->m_gameState.m_isFreeMode;
 }
 
 // m_jumpBuffered seems to be the same as m_holdingButtons[(int)PlayerButton::Jump],
