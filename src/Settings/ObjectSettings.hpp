@@ -4,39 +4,42 @@
 
 using namespace geode::prelude;
 
-class ObjectSettings : public SettingBaseValueV3<std::unordered_set<int>>
-{
-public:
-    static Result<std::shared_ptr<SettingV3>> parse(std::string const &key, std::string const &modID, matjson::Value const &json);
+class ObjectSettings : public SettingBaseValueV3<std::unordered_set<int>> {
+   public:
+    static Result<std::shared_ptr<SettingV3>> parse(std::string const& key,
+                                                    std::string const& modID,
+                                                    matjson::Value const& json);
 
-    SettingNodeV3 *createNode(float width) override;
+    SettingNodeV3* createNode(float width) override;
 };
 
 template <>
-struct geode::SettingTypeForValueType<std::unordered_set<int>>
-{
+struct geode::SettingTypeForValueType<std::unordered_set<int>> {
     using SettingType = ObjectSettings;
 };
 
-class ObjectSettingsNode : public SettingValueNodeV3<ObjectSettings>
-{
-protected:
-    static const std::vector<std::vector<int>> OBJECT_ID_LAYOUT;
+class ObjectSettingsNode : public SettingValueNodeV3<ObjectSettings> {
+   protected:
+    static std::vector<std::vector<int>> objectIdLayout;
 
-public:
-    static const std::unordered_set<int> OBJECT_ID_WHITELISTABLE;
+    static std::unordered_set<int> objectIdWhitelistable;
 
-public:
-    static ObjectSettingsNode *create(std::shared_ptr<ObjectSettings> setting, float width);
+   public:
+    static void generateLayout(std::unordered_map<std::string, uint32_t> customObjects);
 
-protected:
-    CCMenu *m_toggleMenu = nullptr;
+    static bool isWhitelistable(int objectId);
 
-    std::vector<CCMenuItemToggler *> m_toggles;
+   public:
+    static ObjectSettingsNode* create(std::shared_ptr<ObjectSettings> setting, float width);
+
+   protected:
+    CCMenu* m_toggleMenu = nullptr;
+
+    std::vector<CCMenuItemToggler*> m_toggles;
 
     bool init(std::shared_ptr<ObjectSettings> setting, float width);
 
-    void updateState(CCNode *invoker) override;
+    void updateState(CCNode* invoker) override;
 
-    void onToggle(CCObject *sender);
+    void onToggle(CCObject* sender);
 };

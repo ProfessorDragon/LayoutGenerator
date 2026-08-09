@@ -11,7 +11,7 @@ class GameObjectPool {
     static const float VERY_SMALL_SHARES;
 
    public:
-    static void generate(std::unordered_map<std::string, uint32_t> customObjects);
+    static void generatePool(std::unordered_map<std::string, uint32_t> customObjects);
 
    protected:
     static void addPad(int tags, float shares, int objectId);

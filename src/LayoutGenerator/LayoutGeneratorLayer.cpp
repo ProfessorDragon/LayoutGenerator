@@ -622,7 +622,7 @@ const PoolObject *LayoutGeneratorLayer::fishLegally(PlayerData *pd, float dt, in
                 return 0.f;
 
             // object id whitelist
-            if (ObjectSettingsNode::OBJECT_ID_WHITELISTABLE.contains(fish->objectId) &&
+            if (ObjectSettingsNode::isWhitelistable(fish->objectId) &&
                 !objectWhitelist.contains(fish->objectId))
                 return 0.f;
 

@@ -21,7 +21,8 @@ $on_game(Loaded) {
             customObjects[info.id] = objectId;
         }
     }
-    GameObjectPool::generate(customObjects);
+    GameObjectPool::generatePool(customObjects);
+    ObjectSettingsNode::generateLayout(customObjects);
 
     // auto levelManager = LocalLevelManager::get();
     // if (!levelManager) {

@@ -121,15 +121,15 @@
 			"type": "bool",
 			"default": true
 		},
-		"experimental-gameplay": {
-			"name": "Experimental gameplay",
-			"description": "Adds experimental gameplay elements such as late ring timings and jump pads while flying.",
+		"camera-free-mode": {
+			"name": "Free camera",
+			"description": "Enables free mode for gamemode portals.",
 			"type": "bool",
 			"default": false
 		},
-		"camera-free-mode": {
-			"name": "Free camera (experimental)",
-			"description": "Enables free mode for gamemode portals.",
+		"experimental-gameplay": {
+			"name": "Experimental gameplay",
+			"description": "Adds experimental gameplay elements such as late ring timings and jump pads while flying.",
 			"type": "bool",
 			"default": false
 		},

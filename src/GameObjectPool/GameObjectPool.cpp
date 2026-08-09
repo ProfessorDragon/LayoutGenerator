@@ -11,7 +11,7 @@ const float GameObjectPool::BLOCK_SHARES = 50.f;
 
 const float GameObjectPool::VERY_SMALL_SHARES = .05f;
 
-void GameObjectPool::generate(std::unordered_map<std::string, uint32_t> customObjects) {
+void GameObjectPool::generatePool(std::unordered_map<std::string, uint32_t> customObjects) {
     // ground
     pool.push_back(PoolObject("ground jump")
                        .withTags(PoolTag::BLOCK | PoolTag::JUMP)
