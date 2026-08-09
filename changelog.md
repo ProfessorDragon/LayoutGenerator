@@ -1,3 +1,9 @@
+# 1.5.0
+
+- Added support for the Big Portal mod, and potentially other custom objects in the future
+- Moved green gravity portals out of the experimental gameplay section, and added a separate toggle for it
+
+
 # 1.4.1
 
 - Generated objects can be selected and deleted by pressing the undo button
