@@ -16,6 +16,13 @@ Quality gameplay not guaranteed.
 5. It will go for as long as you want. Click the stop button to stop generating.
 
 
+## Custom objects
+
+The generator supports the following custom object mods. Custom objects are disabled by default - open settings to enable them once the relevant mods are installed.
+
+<mod:profdragon.bigportal>
+
+
 ## Known issues
 
 - The player can die in wave by hitting a gamemode portal when sandwiched between the level bounds and another block.
