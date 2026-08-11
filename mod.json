@@ -14,7 +14,7 @@
 	"dependencies": {
 		"geode.node-ids": ">=v1.23.3",
 		"smjs.object-collab": {
-			"version": ">=0.5.3-beta.1",
+			"version": ">=0.5.4-beta.1",
 			"required": false
 		}
 	},
