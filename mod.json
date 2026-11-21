@@ -1,5 +1,5 @@
 {
-	"geode": "6.0.0-alpha.2",
+	"geode": "6.0.0-beta.1",
 	"gd": {
 		"win": "2.2091",
 		"android": "2.2091",
@@ -12,11 +12,7 @@
 	"developer": "ProfDragon",
 	"description": "Procedurally generate Geometry Dash layouts",
 	"dependencies": {
-		"geode.node-ids": ">=v1.23.3",
-		"smjs.object-collab": {
-			"version": ">=0.6.3",
-			"required": false
-		}
+		"geode.node-ids": ">=v1.23.3"
 	},
 	"issues": {
 		"info": "Message me on Discord @professordragon, or sumbit an issue on GitHub.",
