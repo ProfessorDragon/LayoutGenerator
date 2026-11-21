@@ -118,6 +118,18 @@ bool ObjectSettingsNode::init(std::shared_ptr<ObjectSettings> setting, float wid
     return true;
 }
 
+void ObjectSettingsNode::onToggle(CCObject* sender) {
+    auto value = getValue();
+
+    if (value.contains(sender->getTag())) {
+        value.erase(sender->getTag());
+    } else {
+        value.insert(sender->getTag());
+    }
+
+    setValue(value, static_cast<CCNode*>(sender));
+}
+
 void ObjectSettingsNode::updateState(CCNode* invoker) {
     SettingValueNodeV3::updateState(invoker);
 
@@ -133,16 +145,4 @@ void ObjectSettingsNode::updateState(CCNode* invoker) {
         toggle->setOpacity(shouldEnable ? 255 : 155);
         toggle->setColor(shouldEnable ? ccWHITE : ccGRAY);
     }
-}
-
-void ObjectSettingsNode::onToggle(CCObject* sender) {
-    auto value = getValue();
-
-    if (value.contains(sender->getTag())) {
-        value.erase(sender->getTag());
-    } else {
-        value.insert(sender->getTag());
-    }
-
-    setValue(value, static_cast<CCNode*>(sender));
 }

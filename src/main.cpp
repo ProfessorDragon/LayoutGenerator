@@ -1,5 +1,9 @@
 #include <Geode/Geode.hpp>
-#include <smjs.object-collab/include/object_collab_optional.hpp>
+// "smjs.object-collab": {
+// 	"version": ">=0.6.3",
+// 	"required": false
+// }
+// #include <smjs.object-collab/include/object_collab_optional.hpp>
 
 #include "GameObjectPool/GameObjectPool.hpp"
 #include "Settings/ObjectSettings.hpp"
@@ -14,13 +18,13 @@ $on_mod(Loaded) {
 
 $on_game(Loaded) {
     std::unordered_map<std::string, uint32_t> customObjects;
-    Result<object_collab::OptionalRegister> result = object_collab::getOptionalRegister();
-    if (result) {
-        log::info("Found Object Collab");
-        for (auto [objectId, info] : result.unwrap()) {
-            customObjects[info.id] = objectId;
-        }
-    }
+    // Result<object_collab::OptionalRegister> result = object_collab::getOptionalRegister();
+    // if (result) {
+    //     log::info("Found Object Collab");
+    //     for (auto [objectId, info] : result.unwrap()) {
+    //         customObjects[info.id] = objectId;
+    //     }
+    // }
     GameObjectPool::generatePool(customObjects);
     ObjectSettingsNode::generateLayout(customObjects);
 

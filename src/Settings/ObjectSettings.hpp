@@ -39,7 +39,8 @@ class ObjectSettingsNode : public SettingValueNodeV3<ObjectSettings> {
 
     bool init(std::shared_ptr<ObjectSettings> setting, float width);
 
-    void updateState(CCNode* invoker) override;
-
     void onToggle(CCObject* sender);
+
+   public:
+    void updateState(CCNode* invoker) override;
 };
