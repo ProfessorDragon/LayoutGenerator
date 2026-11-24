@@ -1,3 +1,8 @@
+# 1.5.1
+
+- Supports Geode v6.0.0
+
+
 # 1.5.0
 
 - Added support for the Big Portal mod, and potentially other custom objects in the future
