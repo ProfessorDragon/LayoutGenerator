@@ -1,7 +1,8 @@
 #pragma once
 
-#include "../PoolObject/PoolEnums.hpp"
 #include <Geode/Geode.hpp>
+
+#include "../PoolObject/PoolEnums.hpp"
 
 using namespace geode::prelude;
 
@@ -9,12 +10,11 @@ class PlayerData;
 class PlayerTrailData;
 class PoolObject;
 
-class LayoutGeneratorLayer : public CCLayer
-{
-public:
-    static LayoutGeneratorLayer *create();
+class LayoutGeneratorLayer : public CCLayer {
+   public:
+    static LayoutGeneratorLayer* create();
 
-protected:
+   protected:
     bool m_isBuilding = false;
 
     float m_boundsCeil = 0.f;
@@ -38,11 +38,11 @@ protected:
 
     bool m_isClickingLastFrame = false;
 
-    const PoolObject *m_lastPlacedFish = nullptr;
+    const PoolObject* m_lastPlacedFish = nullptr;
 
     CCPoint m_lastPlacedFishPos;
 
-    GameObject *m_lastPlacedJumpIndicator = nullptr;
+    GameObject* m_lastPlacedJumpIndicator = nullptr;
 
     PoolState m_lastPlayerGamemode = PoolState::GAMEMODE_CUBE;
 
@@ -66,7 +66,7 @@ protected:
 
     float m_tapBalance = 0.f;
 
-protected:
+   protected:
     bool init() override;
 
     void reset();
@@ -80,11 +80,12 @@ protected:
     void update(float dt) override;
 
     // creates an object in the LevelEditorLayer and adds it to m_placedObjectUniqueIds
-    GameObject *createObject(int key, CCPoint position);
+    GameObject* createObject(int key, CCPoint position);
 
-    const PoolObject *fishLegally(PlayerData *pd, float dt, int excludeTags, int requireTap);
+    const PoolObject* fishLegally(PlayerData* pd, float dt, int excludeTags, int requireTap);
 
-    void placeFish(PlayerData *pd, const PoolObject *fish, bool dedup = false, bool useLastY = false);
+    void placeFish(PlayerData* pd, const PoolObject* fish, bool dedup = false,
+                   bool useLastY = false);
 
     void placeCreditText(std::string text, CCPoint pos);
 
@@ -98,36 +99,32 @@ protected:
 
     void placeLabel(std::string text, CCPoint pos);
 
-    void placeSpikeBoundary(
-        bool bottom,
-        CCPoint bottomPos,
-        bool top,
-        CCPoint topPos,
-        const PlayerTrailData &midTrail,
-        float dedupDistance);
+    void placeSpikeBoundary(bool bottom, CCPoint bottomPos, bool top, CCPoint topPos,
+                            const PlayerTrailData& midTrail, float dedupDistance);
 
-    void placeSpikeInBounds(CCPoint pos, const PlayerTrailData &trail, bool flipY);
+    void placeSpikeInBounds(CCPoint pos, const PlayerTrailData& trail, bool flipY);
 
     bool doesRectInterfereWithTrail(CCRect rect, float playerX, bool isBlock, bool isMini);
 
     void fillSpiderTrail(CCPoint pos);
 
-    bool isOutOfBounds(float y, float height, bool hasUpperBound, float boundsCeil, float boundsFloor);
+    bool isOutOfBounds(float y, float height, bool hasUpperBound, float boundsCeil,
+                       float boundsFloor);
 
-    bool isOutOfBounds(float y, float height, PlayerData *pd);
+    bool isOutOfBounds(float y, float height, PlayerData* pd);
 
-    bool isOutOfBounds(float y, float height, const PlayerTrailData &trail);
+    bool isOutOfBounds(float y, float height, const PlayerTrailData& trail);
 
-    GameObject *getObjectNearPoint(CCPoint point, float radius, int objectId = -1);
+    GameObject* getObjectNearPoint(CCPoint point, float radius, int objectId = -1);
 
-    CCRect getObjectRect(GameObject *obj);
+    CCRect getObjectRect(GameObject* obj);
 
-public:
+   public:
     bool getIsBuilding();
 
-    void onBuildButton(CCObject *);
+    void onBuildButton(CCObject*);
 
-    void onSettingsButton(CCObject *);
+    void onSettingsButton(CCObject*);
 
     void playtestStopped();
 };

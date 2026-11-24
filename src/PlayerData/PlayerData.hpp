@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Geode/Geode.hpp>
+
 #include "../PoolObject/PoolEnums.hpp"
 
 using namespace geode::prelude;
@@ -8,9 +9,8 @@ using namespace geode::prelude;
 class MyPlayerObject;
 class PoolObject;
 
-struct PlayerData
-{
-    MyPlayerObject *player = nullptr;
+struct PlayerData {
+    MyPlayerObject* player = nullptr;
 
     CCPoint pos;
 
@@ -24,7 +24,7 @@ struct PlayerData
 
     // state
 
-    void setPlayer(PlayerObject *player);
+    void setPlayer(PlayerObject* player);
 
     void storeGamemode();
 
@@ -43,8 +43,7 @@ struct PlayerData
     int getSign() const;
 };
 
-struct PlayerTrailData
-{
+struct PlayerTrailData {
     CCPoint pos;
 
     CCPoint velUnscaled;
@@ -65,18 +64,12 @@ struct PlayerTrailData
 
     // set later in the LayoutGeneratorLayer
 
-    const PoolObject *fish = nullptr;
+    const PoolObject* fish = nullptr;
 
     // constructor
 
-    static PlayerTrailData fromPlayerData(const PlayerData &pd)
-    {
-        return PlayerTrailData{
-            pd.pos,
-            pd.velUnscaled,
-            pd.isClicking(),
-            pd.getRectSize(),
-            pd.state};
+    static PlayerTrailData fromPlayerData(const PlayerData& pd) {
+        return PlayerTrailData{pd.pos, pd.velUnscaled, pd.isClicking(), pd.getRectSize(), pd.state};
     };
 
     // helpers

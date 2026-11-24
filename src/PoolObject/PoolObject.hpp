@@ -75,7 +75,9 @@ struct PoolObject {
 
     bool matchesPlayerState(int state) const {
         for (auto requireFlag : states) {
-            if (!(state & requireFlag)) return false;
+            if (!(state & requireFlag)) {
+                return false;
+            }
         }
         return true;
     }

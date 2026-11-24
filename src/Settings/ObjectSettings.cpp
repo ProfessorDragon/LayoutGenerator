@@ -60,7 +60,9 @@ ObjectSettingsNode* ObjectSettingsNode::create(std::shared_ptr<ObjectSettings> s
 }
 
 bool ObjectSettingsNode::init(std::shared_ptr<ObjectSettings> setting, float width) {
-    if (!SettingValueNodeV3::init(setting, width)) return false;
+    if (!SettingValueNodeV3::init(setting, width)) {
+        return false;
+    }
 
     const float height = 160.f;
 

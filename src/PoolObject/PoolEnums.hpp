@@ -1,9 +1,8 @@
 #pragma once
 
 /// commonly used object ids
-class ObjectId
-{
-public:
+class ObjectId {
+   public:
     static const int BLOCK = 1;
     static const int BLOCK_LINE = 2;
     static const int SPIKE = 8;
@@ -21,8 +20,7 @@ public:
     static const int SPIDER_PAD = 3005;
 };
 
-enum PoolTag
-{
+enum PoolTag {
     // block type
     BLOCK = 1 << 0,
     BREAKABLE_BLOCK = 1 << 1,
@@ -33,20 +31,19 @@ enum PoolTag
     PORTAL = 1 << 5,
 
     // what the block does
-    JUMP = 1 << 6,          // sends player upwards
-    JUMP_HIGH = 1 << 7,     // sends player upwards a lot (red pad/orb)
-    FALL = 1 << 8,          // sends player downwards
-    GRAVITY = 1 << 9,       // changes player gravity
-    SIZE_ = 1 << 10,        // changes player size
-    SPEED = 1 << 11,        // changes player speed
-    GAMEMODE = 1 << 12,     // changes gamemode
-    SPIDER = 1 << 13,       // teleports player to ground
-    BUFFERED = 1 << 14,     // can only be interacted with when a tap is buffered
-    EXPERIMENTAL = 1 << 15, // classified as unconventional gameplay
+    JUMP = 1 << 6,           // sends player upwards
+    JUMP_HIGH = 1 << 7,      // sends player upwards a lot (red pad/orb)
+    FALL = 1 << 8,           // sends player downwards
+    GRAVITY = 1 << 9,        // changes player gravity
+    SIZE_ = 1 << 10,         // changes player size
+    SPEED = 1 << 11,         // changes player speed
+    GAMEMODE = 1 << 12,      // changes gamemode
+    SPIDER = 1 << 13,        // teleports player to ground
+    BUFFERED = 1 << 14,      // can only be interacted with when a tap is buffered
+    EXPERIMENTAL = 1 << 15,  // classified as unconventional gameplay
 };
 
-enum PoolState
-{
+enum PoolState {
     NONE = 0,
 
     GROUNDED = 1 << 0,
@@ -85,17 +82,20 @@ enum PoolState
     TAP_FLYING = GAMEMODE_UFO | GAMEMODE_SWING,
     HOLD_FLYING = GAMEMODE_SHIP | GAMEMODE_WAVE,
     NOT_FLYING = GAMEMODE_CUBE | GAMEMODE_BALL | GAMEMODE_ROBOT | GAMEMODE_SPIDER,
-    NOT_WAVE = GAMEMODE_CUBE | GAMEMODE_SHIP | GAMEMODE_BALL | GAMEMODE_UFO | GAMEMODE_ROBOT | GAMEMODE_SPIDER | GAMEMODE_SWING,
-    NOT_ROBOT = GAMEMODE_CUBE | GAMEMODE_SHIP | GAMEMODE_BALL | GAMEMODE_UFO | GAMEMODE_WAVE | GAMEMODE_SPIDER | GAMEMODE_SWING,
-    NOT_SPIDER = GAMEMODE_CUBE | GAMEMODE_SHIP | GAMEMODE_BALL | GAMEMODE_UFO | GAMEMODE_WAVE | GAMEMODE_ROBOT | GAMEMODE_SWING,
-    HAS_BOUNDS = GAMEMODE_SHIP | GAMEMODE_BALL | GAMEMODE_UFO | GAMEMODE_WAVE | GAMEMODE_SPIDER | GAMEMODE_SWING,
+    NOT_WAVE = GAMEMODE_CUBE | GAMEMODE_SHIP | GAMEMODE_BALL | GAMEMODE_UFO | GAMEMODE_ROBOT |
+        GAMEMODE_SPIDER | GAMEMODE_SWING,
+    NOT_ROBOT = GAMEMODE_CUBE | GAMEMODE_SHIP | GAMEMODE_BALL | GAMEMODE_UFO | GAMEMODE_WAVE |
+        GAMEMODE_SPIDER | GAMEMODE_SWING,
+    NOT_SPIDER = GAMEMODE_CUBE | GAMEMODE_SHIP | GAMEMODE_BALL | GAMEMODE_UFO | GAMEMODE_WAVE |
+        GAMEMODE_ROBOT | GAMEMODE_SWING,
+    HAS_BOUNDS = GAMEMODE_SHIP | GAMEMODE_BALL | GAMEMODE_UFO | GAMEMODE_WAVE | GAMEMODE_SPIDER |
+        GAMEMODE_SWING,
     NO_BOUNDS = GAMEMODE_CUBE | GAMEMODE_ROBOT,
     JUMP_NEEDS_BUFFER = GAMEMODE_BALL | GAMEMODE_ROBOT | GAMEMODE_SPIDER,
     JUMP_CHANGES_GRAVITY = GAMEMODE_BALL | GAMEMODE_SPIDER | GAMEMODE_SWING,
 };
 
-enum PoolAlign
-{
+enum PoolAlign {
     TL = 1 << 0,
     TC = 1 << 1,
     TR = 1 << 2,
@@ -112,16 +112,15 @@ enum PoolAlign
     R = TR | CR | BR,
 };
 
-enum PoolTap
-{
+enum PoolTap {
     NO = 1 << 0,
     TAP = 1 << 1,
-    TAP_DELAYED = 1 << 2,    // tap, but a bit late
-    HOLD = 1 << 3,           // hold until the next object is placed
-    HOLD_RANDOM = 1 << 4,    // hold for a random duration (robot)
-    ANY = 1 << 5,            // doesn't matter if you tap, the player can't do anything
-    RANDOM = 1 << 6,         // mash randomly
-    TOWARDS_CENTER = 1 << 7, // aim for middle of bounds by constantly monitoring the player's position
+    TAP_DELAYED = 1 << 2,     // tap, but a bit late
+    HOLD = 1 << 3,            // hold until the next object is placed
+    HOLD_RANDOM = 1 << 4,     // hold for a random duration (robot)
+    ANY = 1 << 5,             // doesn't matter if you tap, the player can't do anything
+    RANDOM = 1 << 6,          // mash randomly
+    TOWARDS_CENTER = 1 << 7,  // aim for middle of bounds by constantly monitoring player pos
 
     TAP_OR_HOLD = TAP | TAP_DELAYED | HOLD | HOLD_RANDOM,
 };

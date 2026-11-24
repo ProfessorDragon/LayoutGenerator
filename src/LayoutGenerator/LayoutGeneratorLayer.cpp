@@ -20,7 +20,9 @@ LayoutGeneratorLayer* LayoutGeneratorLayer::create() {
 }
 
 bool LayoutGeneratorLayer::init() {
-    if (!CCLayer::init()) return false;
+    if (!CCLayer::init()) {
+        return false;
+    }
 
     // for debugging CCRects
     // log::debug("{} {} {} {}", rect.getMinX(), rect.getMinY(), rect.getMaxX(), rect.getMaxY());
@@ -466,12 +468,13 @@ void LayoutGeneratorLayer::update(float dt) {
             float dist = abs(pd->pos.y - mid);
             if (dist < 60 && utils::random::chance((1 - dist / 60.f) * .5f)) push = !push;
 
-            if (push != pd->isClicking())
+            if (push != pd->isClicking()) {
                 if (push) {
                     pd->player->pushButton(PlayerButton::Jump);
                 } else {
                     pd->player->releaseButton(PlayerButton::Jump);
                 }
+            }
         } else if ((bool)(m_shouldTap & PoolTap::TAP_OR_HOLD) != pd->isClicking()) {
             if (m_shouldTap & PoolTap::TAP_OR_HOLD) {
                 pd->player->pushButton(PlayerButton::Jump);
