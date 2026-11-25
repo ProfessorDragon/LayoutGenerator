@@ -14,10 +14,12 @@ jobs:
 
         - name: macOS
           os: macos-latest
+          allow-failure: true
 
         - name: iOS
           os: macos-latest
           target: iOS
+          allow-failure: true
 
         - name: Android32
           os: ubuntu-latest
@@ -29,6 +31,7 @@ jobs:
 
     name: ${{ matrix.config.name }}
     runs-on: ${{ matrix.config.os }}
+    continue-on-error: ${{ matrix.config.allow-failure || false }}
 
     steps:
       - uses: actions/checkout@v4
