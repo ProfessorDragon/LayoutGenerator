@@ -72,7 +72,14 @@ void LayoutGeneratorLayer::buildStart() {
 }
 
 void LayoutGeneratorLayer::buildStop() {
-    LevelEditorLayer::get()->m_editorUI->onStopPlaytest(nullptr);
+    // same as EditorUI::onStopPlaytest(nullptr)
+    auto ui = LevelEditorLayer::get()->m_editorUI;
+    ui->showUI(true);
+    if (ui->m_isPlayingMusic) {
+        ui->onPlayback(nullptr);
+    }
+    ui->m_editorLayer->onStopPlaytest();
+    ui->playtestStopped();
 }
 
 void LayoutGeneratorLayer::update(float dt) {
